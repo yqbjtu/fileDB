@@ -20,18 +20,17 @@ func NewCvsController() *CvsController {
 }
 
 // CreateNewVersion 文件提交一个新版本，
-func (c *CvsController) CreateNewVersion(context *gin.Context) {
-
+func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	var req mydomain.AddVersionReq
 	var err error
-	cellIdStr := context.Query("cellId")
-	versionStr := context.Query("version")
-	namespaceStr := context.Query("namespace")
-	lockKeyStr := context.Query("lockKey")
+	cellIdStr := ctx.Query("cellId")
+	versionStr := ctx.Query("version")
+	namespaceStr := ctx.Query("namespace")
+	lockKeyStr := ctx.Query("lockKey")
 
 	if cellIdStr == "" || namespaceStr == "" || versionStr == "" || lockKeyStr == "" {
 		klog.Errorf("cellId '%s' can't be empty", cellIdStr)
-		context.JSON(http.StatusBadRequest, gin.H{
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": "cellId/version/ is empty",
 		})
 		return
@@ -39,7 +38,7 @@ func (c *CvsController) CreateNewVersion(context *gin.Context) {
 		req.Version, err = strconv.ParseInt(versionStr, 10, 32)
 		if err != nil {
 			klog.Errorf("failed to convert (%s)to int64, err:%v", versionStr, err)
-			context.JSON(http.StatusBadRequest, gin.H{
+			ctx.JSON(http.StatusBadRequest, gin.H{
 				"errMsg": "version is not int",
 			})
 			return
@@ -51,9 +50,9 @@ func (c *CvsController) CreateNewVersion(context *gin.Context) {
 	}
 
 	klog.Infof("add new file version, req:%v", req)
-	file, header, err := context.Request.FormFile("file")
+	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": fmt.Sprintf("FormFile error: %s", err.Error()),
 		})
 		return
@@ -63,18 +62,18 @@ func (c *CvsController) CreateNewVersion(context *gin.Context) {
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
 	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Namespace, req.Version)
 	// 定义文件保存路径
-	savePath := fmt.Sprintf("/tmp/osmdb/data/%s", req.Namespace) + filename
+	savePath := fmt.Sprintf("/tmp/osmdb/data/%s/", req.Namespace) + filename
 
 	// 将上传的文件存储到服务器上指定的位置
-	if err := context.SaveUploadedFile(header, savePath); err != nil {
+	if err := ctx.SaveUploadedFile(header, savePath); err != nil {
 		klog.Errorf("failed to write file %q, err:%v", filename, err)
 		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
-		context.JSON(http.StatusOK, commentResult)
+		ctx.JSON(http.StatusOK, commentResult)
 		return
 	}
 
 	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
-	context.JSON(http.StatusOK, commentResult)
+	ctx.JSON(http.StatusOK, commentResult)
 }
 
 //func (c *CvsController) GetAllUsers(context *gin.Context) {

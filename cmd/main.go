@@ -26,6 +26,7 @@ func main() {
 	flag.Parse()
 	klog.Info("start gin webserver on specific port")
 
+	//store.InitDB()
 	router := gin.Default()
 	myrouter.ConfigRouter(router)
 	webServer := &http.Server{

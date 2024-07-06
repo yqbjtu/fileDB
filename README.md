@@ -32,3 +32,10 @@ curl -X POST -F "file=@/Users/ericyang/Downloads/20007114.osm" \
 {"Code":0,"Data":{"CellId":"20007114","Version":1,"Namespace":"main","LockKey":"key1","Comment":""},"Msg":"add new version ok"}
 ```
 
+
+# download a cell version
+
+```shell
+curl --location --request GET 'http://localhost:8090/api/v1/query/download?cellId=20007114&version=1&namespace=main'
+
+```
