@@ -39,3 +39,15 @@ curl -X POST -F "file=@/Users/ericyang/Downloads/20007114.osm" \
 curl --location --request GET 'http://localhost:8090/api/v1/query/download?cellId=20007114&version=1&namespace=main'
 
 ```
+
+# lock a cell
+
+```json
+curl --location --request POST 'http://localhost:8090/api/v1/cvs/lock' \
+--data-raw '{
+    "cellId" :"20007114",
+    "namespace" :"dev",
+    "LockKey" : "user1",
+    "lockDuration" :"5m"
+}'
+```

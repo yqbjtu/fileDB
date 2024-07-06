@@ -10,13 +10,13 @@ func ConfigRouter(router *gin.Engine) {
 	cvsController := mycontroller.NewCvsController()
 	cvsGroupEngine.POST("/add", cvsController.CreateNewVersion)
 	cvsGroupEngine.POST("/lock", cvsController.Lock)
+	cvsGroupEngine.POST("/unlock", cvsController.UnLock)
 
 	queryGroupEngine := router.Group("api/v1/query")
 	queryController := mycontroller.NewQueryController()
 	queryGroupEngine.GET("/download", queryController.DownloadFile)
 
 	router.POST("/users/:userId", cvsController.UpdateOneUser)
-	//router.GET("/users", cvsController.GetAllUsers)
 	router.GET("/usersfind", cvsController.FindUsers)
 	router.GET("/cellversion/status", cvsController.Status)
 

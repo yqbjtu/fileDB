@@ -4,7 +4,6 @@ import (
 	mydomain "fileDB/pkg/domain"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
 	"k8s.io/klog"
 	"net/http"
 	"strconv"
@@ -143,73 +142,64 @@ func (c *CvsController) Status(context *gin.Context) {
 	context.JSON(http.StatusOK, response)
 }
 
-// cvs/lock?cellId=1507888&namespace=test&plus1Ver=2&cellFilePath=%2F
-func (c *CvsController) Lock(context *gin.Context) {
-	cellIdStr := context.Query("cellId")
-	cellFilePath := context.Query("cellFilePath")
-	plus1VerStr := context.Query("plus1Ver")
-	branch := context.DefaultQuery("branch", "main")
+func (c *CvsController) Lock(ctx *gin.Context) {
+	// 从body中解析出cellId, plus1Ver, , branch
+	var commentResult mydomain.CommentResult
+	lockReq := mydomain.LockReq{}
+	if err := ctx.ShouldBind(&lockReq); err != nil {
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
+		ctx.JSON(http.StatusBadRequest, commentResult)
+		return
+	}
 
-	var cellId int64
-	var plus1Ver int64
-	var err error
-	if cellIdStr == "" {
-		klog.Errorf("cellId can't be empty", cellIdStr)
-		context.JSON(http.StatusBadRequest, gin.H{
+	if lockReq.CellId == "" {
+		klog.Errorf("cellId can't be empty", lockReq.CellId)
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": "cellId is empty",
 		})
 		return
-	} else {
-		cellId, err = strconv.ParseInt(cellIdStr, 10, 64)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
-			context.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "cellId is not int",
-			})
-			return
-		}
 	}
 
-	if plus1VerStr == "" {
-		klog.Errorf("plus1Ver can't be empty", plus1VerStr)
-		context.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "plus1Ver is empty",
-		})
-		return
-	} else {
-		plus1Ver, err = strconv.ParseInt(plus1VerStr, 10, 64)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", plus1VerStr, err)
-			context.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "plus1Ver is not int",
-			})
-			return
-		}
-	}
-
-	if cellFilePath == "" {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellFilePath is empty",
-		})
-		return
-	}
-
-	body, err := ioutil.ReadAll(context.Request.Body)
-	if err != nil {
-		klog.Infof("failed to read body, err:%v", err)
-	} else {
-		klog.Infof("body:%v", body)
-	}
-
-	request := map[string]string{"who": "user1", "jobId": "algo.work", "bizVersion": "1.1.0"}
+	// add lock record in db
 	response := map[string]interface{}{
-		"ver":       plus1Ver,
-		"id":        cellId,
-		"branch":    branch,
-		"timestamp": "",
-		"request":   request,
+		"id": lockReq.CellId,
+		//
+		//"latestVer":       lockReq.Version,
+		"ns":        lockReq.Namespace,
+		"lockStart": "",
+		"lockEnd":   "",
+		"lockKey":   lockReq.LockKey,
 	}
-	context.JSON(http.StatusOK, response)
+
+	commentResult = mydomain.CommentResult{Code: 0, Data: response, Msg: "success"}
+	ctx.JSON(http.StatusOK, response)
+}
+
+// UnLock 幂等操作， 也就是如果该cell没有被加锁，调用unlock会直接成功
+// 给出英文注释
+
+func (c *CvsController) UnLock(ctx *gin.Context) {
+	var commentResult mydomain.CommentResult
+	lockReq := mydomain.LockReq{}
+	if err := ctx.ShouldBind(&lockReq); err != nil {
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
+		ctx.JSON(http.StatusBadRequest, commentResult)
+		return
+	}
+
+	if lockReq.CellId == "" {
+		klog.Errorf("cellId can't be empty", lockReq.CellId)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"errMsg": "cellId is empty",
+		})
+		return
+	}
+
+	// if the cell is not locked, return ok
+	// if the cell is locked by this lockKey, unlock and return ok
+	// if the cell is locked by other lockKey, return fail
+
+	ctx.JSON(http.StatusOK, "response")
 }
 
 /*
