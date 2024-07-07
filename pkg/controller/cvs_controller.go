@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -61,7 +62,8 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
 	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Namespace, req.Version)
 	// 定义文件保存路径
-	savePath := fmt.Sprintf("/tmp/osmdb/data/%s/", req.Namespace) + filename
+	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
+	savePath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Namespace) + filename
 
 	// 将上传的文件存储到服务器上指定的位置
 	if err := ctx.SaveUploadedFile(header, savePath); err != nil {

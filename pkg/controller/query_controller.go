@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -58,7 +59,8 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
 	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Namespace, req.Version)
 	// 定义文件保存路径
-	cellPath := fmt.Sprintf("/tmp/osmdb/data/%s/", req.Namespace) + filename
+	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
+	cellPath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Namespace) + filename
 
 	// 先检测该cellPath是否存在，如果不存在报错
 	// 如果目录不存在，则创建改目录

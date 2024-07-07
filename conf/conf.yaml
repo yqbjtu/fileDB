@@ -1,0 +1,21 @@
+
+
+port: 8090
+version: "v1.3.0"
+
+OSMConfig:
+  dataDir: "/tmp/osmdb/data"
+  tempDir: "/tmp/osmdb/temp"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  database: "test"
+  username: "root"
+  password: "rati0nal"
+  isconn: true
+
+logConfig:
+  logPath: ./access.log
+  show_caller: true
+  level: info

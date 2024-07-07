@@ -1,11 +1,15 @@
 package main
 
 import (
+	"fileDB/pkg/config"
+	"fileDB/pkg/log"
 	myrouter "fileDB/pkg/router"
 	"flag"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -25,6 +29,21 @@ func main() {
 
 	flag.Parse()
 	klog.Info("start gin webserver on specific port")
+
+	cfgPath := "./conf/conf.yaml"
+	absDir, err := os.Executable()
+	if err != nil {
+		fmt.Printf("start gin webserver on specific port from %s,"+
+			" failed to get executable path: err:%s", cfgPath, err)
+	} else {
+		fmt.Printf("start gin webserver on specific port from %s, currDir:%s", cfgPath, absDir)
+	}
+
+	config.InitConfig(cfgPath)
+
+	// init the log setting
+	sugarLogger := log.InitLogger(&config.GetConfig().LogConfig)
+	defer sugarLogger.Sync()
 
 	//store.InitDB()
 	router := gin.Default()
