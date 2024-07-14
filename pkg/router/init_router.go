@@ -15,6 +15,7 @@ func ConfigRouter(router *gin.Engine) {
 	queryGroupEngine := router.Group("api/v1/query")
 	queryController := mycontroller.NewQueryController()
 	queryGroupEngine.GET("/download", queryController.DownloadFile)
+	queryGroupEngine.GET("/history", queryController.History)
 
 	router.POST("/users/:userId", cvsController.UpdateOneUser)
 	router.GET("/usersfind", cvsController.FindUsers)

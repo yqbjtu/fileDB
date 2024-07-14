@@ -94,3 +94,31 @@ func (c *QueryController) FileBBoxInfo(context *gin.Context) {
 		"msg":  "ok",
 	})
 }
+
+// query the cell history , such as addVersion,
+func (c *QueryController) History(ctx *gin.Context) {
+	var req mydomain.CellBase
+	//var err error
+	cellIdStr := ctx.Query("cellId")
+	//pageSizeStr := ctx.Query("pageSize")
+	//pageNumStr := ctx.Query("pageNum")
+	namespaceStr := ctx.Query("namespace")
+
+	if cellIdStr == "" || namespaceStr == "" {
+		klog.Errorf("cellId '%s'/namespace '%s' can't be empty", cellIdStr, namespaceStr)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"errMsg": "cellId or namespace is empty",
+		})
+		return
+	} else {
+		req.CellId = cellIdStr
+		req.Namespace = namespaceStr
+	}
+
+	// query db to find the history
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": nil,
+		"msg":  "ok",
+	})
+}
