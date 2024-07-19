@@ -1,7 +1,7 @@
 package log
 
 import (
-	"ginportdemo/pkg/config"
+	"fileDB/pkg/config"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -3,9 +3,9 @@ package domain
 import "github.com/golang/protobuf/ptypes/duration"
 
 type CellBase struct {
-	CellId    string `json:"cellId"`
-	Version   int64  `json:"version"`
-	Namespace string `json:"namespace"`
+	CellId  string `json:"cellId"`
+	Version int64  `json:"version"`
+	Branch  string `json:"branch"`
 }
 
 type AddVersionReq struct {
@@ -16,7 +16,7 @@ type AddVersionReq struct {
 
 type LockReq struct {
 	CellId       string            `json:"cellId"`
-	Namespace    string            `json:"namespace"`
+	Branch       string            `json:"branch"`
 	LockKey      string            `json:"LockKey"`
 	lockDuration duration.Duration `json:"lockDuration"`
 }

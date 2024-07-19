@@ -10,11 +10,20 @@ import (
 
 // GlobalConfig /*
 type GlobalConfig struct {
-	Version   string      `yaml:"version"`
-	Port      int         `yaml:"port"`
-	OSMConfig OSMConfig   `yaml:"OSMConfig"`
-	Mysql     MySQLConfig `yaml:"mysql"`
-	LogConfig LogConfig   `yaml:"logConfig"`
+	Version   string    `yaml:"version"`
+	Port      int       `yaml:"port"`
+	OSMConfig OSMConfig `yaml:"OSMConfig"`
+
+	Postgres struct {
+		Host      string `mapstructure:"host"`
+		DBName    string `mapstructure:"dbname"`
+		Port      int    `mapstructure:"port"`
+		Username  string `mapstructure:"user"`
+		Password  string `mapstructure:"passwd"`
+		BatchSize int    `mapstructure:"batchSize"`
+	} `mapstructure:"postgres"`
+
+	LogConfig LogConfig `yaml:"logConfig"`
 	//etc ..
 }
 

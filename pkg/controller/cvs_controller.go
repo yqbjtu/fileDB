@@ -45,7 +45,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		}
 
 		req.CellId = cellIdStr
-		req.Namespace = namespaceStr
+		req.Branch = namespaceStr
 		req.LockKey = lockKeyStr
 	}
 
@@ -60,10 +60,10 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	defer file.Close()
 
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
-	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Namespace, req.Version)
+	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
 	// 定义文件保存路径
 	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
-	savePath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Namespace) + filename
+	savePath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Branch) + filename
 
 	// 将上传的文件存储到服务器上指定的位置
 	if err := ctx.SaveUploadedFile(header, savePath); err != nil {
@@ -167,7 +167,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		"id": lockReq.CellId,
 		//
 		//"latestVer":       lockReq.Version,
-		"ns":        lockReq.Namespace,
+		"ns":        lockReq.Branch,
 		"lockStart": "",
 		"lockEnd":   "",
 		"lockKey":   lockReq.LockKey,
