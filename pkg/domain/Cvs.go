@@ -33,9 +33,9 @@ type User struct {
 type CellStatus struct {
 	CellId        string
 	LatestVersion int64
-	Namespace     string
-	user          string
-	addTime       string
+	Branch        string
+	Who           string
+	DurationTime  string
 	IsLocked      string
 	LockKey       string
 	LockTimeFrom  string

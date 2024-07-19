@@ -4,6 +4,7 @@ import (
 	"fileDB/pkg/config"
 	"fileDB/pkg/log"
 	myrouter "fileDB/pkg/router"
+	"fileDB/pkg/store"
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -45,7 +46,7 @@ func main() {
 	sugarLogger := log.InitLogger(&config.GetConfig().LogConfig)
 	defer sugarLogger.Sync()
 
-	//store.InitDB()
+	store.InitDB()
 	router := gin.Default()
 	myrouter.ConfigRouter(router)
 	webServer := &http.Server{

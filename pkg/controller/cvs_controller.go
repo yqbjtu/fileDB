@@ -3,6 +3,9 @@ package controller
 import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/store"
+
+	"fileDB/pkg/domain"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
@@ -25,10 +28,10 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	var err error
 	cellIdStr := ctx.Query("cellId")
 	versionStr := ctx.Query("version")
-	namespaceStr := ctx.Query("namespace")
+	branchStr := ctx.Query("branch")
 	lockKeyStr := ctx.Query("lockKey")
 
-	if cellIdStr == "" || namespaceStr == "" || versionStr == "" || lockKeyStr == "" {
+	if cellIdStr == "" || branchStr == "" || versionStr == "" || lockKeyStr == "" {
 		klog.Errorf("cellId '%s' can't be empty", cellIdStr)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": "cellId/version/ is empty",
@@ -45,7 +48,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		}
 
 		req.CellId = cellIdStr
-		req.Branch = namespaceStr
+		req.Branch = branchStr
 		req.LockKey = lockKeyStr
 	}
 
@@ -73,6 +76,14 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		return
 	}
 
+	var items []domain.CellModel
+	result := store.MyDB.Find(&items)
+	fmt.Println("result:", result)
+	cellStatusStore := store.NewCellStatusStore(store.MyDB)
+	err = cellStatusStore.Find(ctx, "1507888", "main")
+	if err != nil {
+		klog.Errorf("failed to find cell status, err:%v", err)
+	}
 	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
 	ctx.JSON(http.StatusOK, commentResult)
 }

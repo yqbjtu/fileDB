@@ -25,7 +25,7 @@ on linux
 create /tmp/osmdb/data dir on the machine which app runs
 ```azure
 curl -X POST -F "file=@/Users/ericyang/Downloads/20007114.osm" \
-    'http://localhost:8090/api/v1/cvs/add?cellId=20007114&version=1&namespace=main&lockKey=key1'
+    'http://localhost:8090/api/v1/cvs/add?cellId=20007114&version=1&branch=main&lockKey=key1'
 ```
 
 ```json
