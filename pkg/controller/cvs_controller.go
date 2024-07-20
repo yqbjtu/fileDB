@@ -76,13 +76,62 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		return
 	}
 
-	var items []domain.CellModel
+	var items []domain.CellStatus
 	result := store.MyDB.Find(&items)
 	fmt.Println("result:", result)
 	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	err = cellStatusStore.Find(ctx, "1507888", "main")
+	cellStatus, err := cellStatusStore.Find(cellIdStr, branchStr)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
+	}
+
+	// if cell not exist, create a new cell status
+	if cellStatus.CellId == 0 {
+		cellId, _ := strconv.ParseInt(cellIdStr, 10, 32)
+		cellStatus.CellId = cellId
+		cellStatus.LatestVersion = req.Version
+		cellStatus.LockKey = ""
+		cellStatus.Branch = branchStr
+		result = store.MyDB.Save(&cellStatus)
+		if result.Error != nil {
+			klog.Errorf("failed to save cell status, err:%v", result.Error)
+			commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", result.Error)}
+			ctx.JSON(http.StatusOK, commentResult)
+			return
+		} else {
+			commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add the first version ok"}
+			ctx.JSON(http.StatusOK, commentResult)
+			return
+		}
+	}
+
+	// the req.Version should be the latest version + 1
+	expectedVersion := cellStatus.LatestVersion + 1
+	if req.Version != expectedVersion {
+		errMsg := fmt.Sprintf("cellId:%s, current latest version is %d, expectedVersion should be %d, not %d", cellIdStr,
+			cellStatus.LatestVersion, expectedVersion, req.Version)
+		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		ctx.JSON(http.StatusBadRequest, commentResult)
+		return
+	}
+
+	// the cell should not be locked, or it is locked by req.LockKey
+	if cellStatus.LockKey != "" && cellStatus.LockKey != req.LockKey {
+		errMsg := fmt.Sprintf("cellId:%s is locked by %q, not %q", cellIdStr, cellStatus.LockKey, req.LockKey)
+		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		ctx.JSON(http.StatusBadRequest, commentResult)
+		return
+	}
+
+	// update the cell status with latestVersion
+	cellStatus.LatestVersion = req.Version
+	cellStatus.LockKey = ""
+	result = store.MyDB.Save(&cellStatus)
+	if result.Error != nil {
+		klog.Errorf("failed to save cell status, err:%v", result.Error)
+		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", result.Error)}
+		ctx.JSON(http.StatusOK, commentResult)
+		return
 	}
 	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
 	ctx.JSON(http.StatusOK, commentResult)

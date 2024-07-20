@@ -5,7 +5,7 @@ import "github.com/golang/protobuf/ptypes/duration"
 type CellBase struct {
 	CellId  string `json:"cellId"`
 	Version int64  `json:"version"`
-	Branch  string `json:"branch"`
+	Branch  string `json:"Branch"`
 }
 
 type AddVersionReq struct {
@@ -16,7 +16,7 @@ type AddVersionReq struct {
 
 type LockReq struct {
 	CellId       string            `json:"cellId"`
-	Branch       string            `json:"branch"`
+	Branch       string            `json:"Branch"`
 	LockKey      string            `json:"LockKey"`
 	lockDuration duration.Duration `json:"lockDuration"`
 }
@@ -28,16 +28,4 @@ type User struct {
 	UserId int64
 	AddVersionReq
 	//etc ..
-}
-
-type CellStatus struct {
-	CellId        string
-	LatestVersion int64
-	Branch        string
-	Who           string
-	DurationTime  string
-	IsLocked      string
-	LockKey       string
-	LockTimeFrom  string
-	LockTimeTo    string
 }
