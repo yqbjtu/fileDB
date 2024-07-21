@@ -210,7 +210,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	}
 
 	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
-		errMsg := fmt.Sprintf("cell %s has already locked by %s now, so it can't be locked by %s again",
+		errMsg := fmt.Sprintf("cell %s has already been locked by %s now, so it can't be locked by %s again",
 			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
 		ctx.JSON(http.StatusBadRequest, commentResult)
@@ -266,9 +266,20 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 		return
 	}
 	// if the cell is locked by this lockKey, unlock and return ok
-	// if the cell is locked by other lockKey, return fail
+	if cellStatus.LockKey == lockReq.LockKey {
+		msgStr := fmt.Sprintf("cell %s is locked by %s now, unlock done",
+			lockReq.CellId, cellStatus.LockKey)
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
+		ctx.JSON(http.StatusOK, commentResult)
+		return
+	}
 
-	ctx.JSON(http.StatusOK, "response")
+	// if the cell is locked by other lockKey, return fail
+	msgStr := fmt.Sprintf("cell %s is locked by %s now, it can't be unlocked by %s",
+		lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
+	commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
+	ctx.JSON(http.StatusConflict, commentResult)
+	return
 }
 
 /*
