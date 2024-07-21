@@ -245,14 +245,26 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	}
 
 	if lockReq.CellId == "" {
-		klog.Errorf("cellId can't be empty", lockReq.CellId)
+		klog.Errorf("cellId can't be empty, req:%v", lockReq)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": "cellId is empty",
 		})
 		return
 	}
 
+	cellStatusStore := store.NewCellStatusStore(store.MyDB)
+	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
+	if err != nil {
+		klog.Errorf("failed to find cell status, err:%v", err)
+	}
+
 	// if the cell is not locked, return ok
+	if cellStatus.LockKey != "" {
+		msgStr := fmt.Sprintf("cell %s has not been locked", lockReq.CellId)
+		commentResult = mydomain.CommentResult{Code: 0, Data: nil, Msg: msgStr}
+		ctx.JSON(http.StatusOK, commentResult)
+		return
+	}
 	// if the cell is locked by this lockKey, unlock and return ok
 	// if the cell is locked by other lockKey, return fail
 
