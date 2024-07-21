@@ -137,25 +137,6 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, commentResult)
 }
 
-//func (c *CvsController) GetAllUsers(context *gin.Context) {
-//	klog.Infof("get all user")
-//	//H is a shortcut for map[string]interface{}
-//
-//	var users []mydomain.User
-//	var i int64
-//	for i = 0; i < 3; i++ {
-//		userName := fmt.Sprintf("tom%d", i)
-//		user := mydomain.User{UserId: i}
-//		user.UserName = userName
-//		users = append(users, user)
-//	}
-//
-//	context.JSON(http.StatusOK, gin.H{
-//		"result": users,
-//		"count":  len(users),
-//	})
-//}
-
 func (c *CvsController) GetOneUser(context *gin.Context) {
 	userId := context.Param("userId")
 	klog.Infof("get one user by id %q", userId)
@@ -215,10 +196,24 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	}
 
 	if lockReq.CellId == "" {
-		klog.Errorf("cellId can't be empty", lockReq.CellId)
+		klog.Errorf("cellId can't be empty, req:%v", lockReq)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": "cellId is empty",
 		})
+		return
+	}
+
+	cellStatusStore := store.NewCellStatusStore(store.MyDB)
+	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
+	if err != nil {
+		klog.Errorf("failed to find cell status, err:%v", err)
+	}
+
+	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
+		errMsg := fmt.Sprintf("cell %s has already locked by %s now, so it can't be locked by %s again",
+			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
 	}
 
