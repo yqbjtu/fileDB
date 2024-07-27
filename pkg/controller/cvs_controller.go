@@ -242,11 +242,13 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 
 	cellStatus.LockKey = lockReq.LockKey
 	// cellStatus.LockTimeFrom等于当前时间
+	fromTime := time.Now()
+	cellStatus.LockTimeFrom = &fromTime
 
-	cellStatus.LockTimeFrom = time.Now()
 	// cellStatus.LockTimeTo等于当前时间加上一个小时
 	goDuration := time.Duration(lockReq.LockDuration.GetSeconds())*time.Second + time.Duration(lockReq.LockDuration.GetNanos())*time.Nanosecond
-	cellStatus.LockTimeTo = time.Now().Add(goDuration)
+	toTime := time.Now().Add(goDuration)
+	cellStatus.LockTimeTo = &toTime
 	if cellStatus.CellId == 0 {
 		cellStatus.CellId = lockReq.CellId
 		cellStatus.Branch = lockReq.Branch
@@ -284,7 +286,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 func (c *CvsController) UnLock(ctx *gin.Context) {
 	var commentResult mydomain.CommentResult
 	lockReq := mydomain.LockReq{}
-	if err := ctx.ShouldBind(&lockReq); err != nil {
+	if err := ctx.ShouldBindJSON(&lockReq); err != nil {
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
 		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
@@ -298,6 +300,14 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 		return
 	}
 
+	if lockReq.Branch == "" {
+		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"errMsg": fmt.Sprintf("branch can't be empty"),
+		})
+		return
+	}
+
 	cellStatusStore := store.NewCellStatusStore(store.MyDB)
 	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
@@ -305,27 +315,41 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	}
 
 	// if the cell is not locked, return ok
-	if cellStatus.LockKey != "" {
-		msgStr := fmt.Sprintf("cell %s has not been locked", lockReq.CellId)
+	if cellStatus.LockKey == "" {
+		msgStr := fmt.Sprintf("cell %d has not been locked", lockReq.CellId)
 		commentResult = mydomain.CommentResult{Code: 0, Data: nil, Msg: msgStr}
 		ctx.JSON(http.StatusOK, commentResult)
 		return
 	}
-	// if the cell is locked by this lockKey, unlock and return ok
-	if cellStatus.LockKey == lockReq.LockKey {
-		msgStr := fmt.Sprintf("cell %s is locked by %s now, unlock done",
-			lockReq.CellId, cellStatus.LockKey)
+
+	if cellStatus.LockKey != lockReq.LockKey {
+		// if the cell is locked by other lockKey, return fail
+		msgStr := fmt.Sprintf("cell %d is locked by %s now, it can't be unlocked by %s",
+			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
-		ctx.JSON(http.StatusOK, commentResult)
+		ctx.JSON(http.StatusConflict, commentResult)
 		return
 	}
 
-	// if the cell is locked by other lockKey, return fail
-	msgStr := fmt.Sprintf("cell %s is locked by %s now, it can't be unlocked by %s",
-		lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
+	// if the cell is locked by this lockKey, unlock and return ok
+	cellStatus.LockKey = ""
+	cellStatus.LockTimeFrom = nil
+	cellStatus.LockTimeTo = nil
+	result := store.MyDB.Save(&cellStatus)
+	if result.Error != nil {
+		klog.Errorf("failed to save cell status, err:%v", result.Error)
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", result.Error)}
+		ctx.JSON(http.StatusInternalServerError, commentResult)
+		return
+
+	}
+
+	msgStr := fmt.Sprintf("cell %d is unlocked by %s now, unlock done",
+		lockReq.CellId, cellStatus.LockKey)
 	commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
-	ctx.JSON(http.StatusConflict, commentResult)
+	ctx.JSON(http.StatusOK, commentResult)
 	return
+
 }
 
 /*

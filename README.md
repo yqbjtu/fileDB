@@ -53,3 +53,14 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/lock' \
     }
 }'
 ```
+
+# unlock a cell
+
+```json
+curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
+--data-raw '{
+    "cellId" :20007114,
+    "branch" :"dev",
+    "LockKey" : "user1"
+}'
+```
