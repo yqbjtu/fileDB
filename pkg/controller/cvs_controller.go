@@ -42,12 +42,21 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		if err != nil {
 			klog.Errorf("failed to convert (%s)to int64, err:%v", versionStr, err)
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "version is not int",
+				"errMsg": "version is not int type",
 			})
 			return
 		}
 
-		req.CellId = cellIdStr
+		cellId, err := strconv.ParseInt(cellIdStr, 10, 32)
+		if err != nil {
+			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"errMsg": "cellId is not int type",
+			})
+			return
+		}
+
+		req.CellId = cellId
 		req.Branch = branchStr
 		req.LockKey = lockKeyStr
 	}
@@ -63,7 +72,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	defer file.Close()
 
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
-	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
+	filename := fmt.Sprintf("%d@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
 	// 定义文件保存路径
 	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
 	savePath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Branch) + filename
@@ -80,15 +89,14 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	result := store.MyDB.Find(&items)
 	fmt.Println("result:", result)
 	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	cellStatus, err := cellStatusStore.Find(cellIdStr, branchStr)
+	cellStatus, err := cellStatusStore.Find(req.CellId, branchStr)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
 	}
 
 	// if cell not exist, create a new cell status
 	if cellStatus.CellId == 0 {
-		cellId, _ := strconv.ParseInt(cellIdStr, 10, 32)
-		cellStatus.CellId = cellId
+		cellStatus.CellId = req.CellId
 		cellStatus.LatestVersion = req.Version
 		cellStatus.LockKey = ""
 		cellStatus.Branch = branchStr
@@ -163,7 +171,7 @@ func (c *CvsController) Status(context *gin.Context) {
 		if err != nil {
 			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
 			context.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "cellId is int",
+				"errMsg": "cellId is int type",
 			})
 			return
 		}
@@ -189,16 +197,16 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	// 从body中解析出cellId, plus1Ver, , branch
 	var commentResult mydomain.CommentResult
 	lockReq := mydomain.LockReq{}
-	if err := ctx.ShouldBind(&lockReq); err != nil {
+	if err := ctx.ShouldBindJSON(&lockReq); err != nil {
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
 		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
 	}
 
-	if lockReq.CellId == "" {
-		klog.Errorf("cellId can't be empty, req:%v", lockReq)
+	if lockReq.CellId <= 0 {
+		klog.Errorf("cellId can't be <= 0, req:%v", lockReq)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellId is empty",
+			"errMsg": fmt.Sprintf("cellId is %+v, it should be > 0", lockReq),
 		})
 		return
 	}
@@ -210,7 +218,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	}
 
 	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
-		errMsg := fmt.Sprintf("cell %s has already been locked by %s now, so it can't be locked by %s again",
+		errMsg := fmt.Sprintf("cell %d has already been locked by %s now, so it can't be locked by %s again",
 			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
 		ctx.JSON(http.StatusBadRequest, commentResult)
@@ -244,10 +252,10 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 		return
 	}
 
-	if lockReq.CellId == "" {
-		klog.Errorf("cellId can't be empty, req:%v", lockReq)
+	if lockReq.CellId <= 0 {
+		klog.Errorf("cellId can't be <= 0, req:%v", lockReq)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellId is empty",
+			"errMsg": fmt.Sprintf("cellId is %d, it should be > 0", lockReq.CellId),
 		})
 		return
 	}
@@ -285,20 +293,20 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 /*
 // 匹配的url格式:  /usersfind?username=tom&email=test1@163.com
 */
-func (c *CvsController) FindUsers(context *gin.Context) {
-	userName := context.DefaultQuery("username", "张三")
-	email := context.Query("email")
+func (c *CvsController) FindUsers(ctx *gin.Context) {
+	userName := ctx.DefaultQuery("username", "张三")
+	email := ctx.Query("email")
 	// 执行实际搜索，这里只是示例
-	context.String(http.StatusOK, "search user by %q %q", userName, email)
+	ctx.String(http.StatusOK, "search user by %q %q", userName, email)
 }
 
-func (c *CvsController) UpdateOneUser(context *gin.Context) {
-	userId := context.Param("userId")
+func (c *CvsController) UpdateOneUser(ctx *gin.Context) {
+	userId := ctx.Param("userId")
 	klog.Infof("update user by id %q", userId)
 }
 
-func (c *CvsController) DeleteOneUser(context *gin.Context) {
-	userId := context.Param("userId")
+func (c *CvsController) DeleteOneUser(ctx *gin.Context) {
+	userId := ctx.Param("userId")
 	klog.Infof("delete user by id %q", userId)
 
 }

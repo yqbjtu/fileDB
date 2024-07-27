@@ -21,9 +21,9 @@ func NewQueryController() *QueryController {
 	return &controller
 }
 
-func (c *QueryController) FileStatus(context *gin.Context) {
+func (c *QueryController) FileStatus(ctx *gin.Context) {
 	debug.FreeOSMemory()
-	context.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "create user successfully",
 	})
@@ -52,12 +52,20 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 			return
 		}
 
-		req.CellId = cellIdStr
+		cellId, err := strconv.ParseInt(cellIdStr, 10, 64)
+		if err != nil {
+			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"errMsg": "cellId is int type",
+			})
+			return
+		}
+		req.CellId = cellId
 		req.Branch = branchStr
 	}
 
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
-	filename := fmt.Sprintf("%s@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
+	filename := fmt.Sprintf("%d@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
 	// 定义文件保存路径
 	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
 	cellPath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Branch) + filename
@@ -84,11 +92,11 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	ctx.File(cellPath)
 }
 
-func (c *QueryController) FileBBoxInfo(context *gin.Context) {
+func (c *QueryController) FileBBoxInfo(ctx *gin.Context) {
 	klog.Infof("build info")
 	//H is a shortcut for map[string]interface{}
 
-	context.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": nil,
 		"msg":  "ok",
@@ -111,7 +119,15 @@ func (c *QueryController) History(ctx *gin.Context) {
 		})
 		return
 	} else {
-		req.CellId = cellIdStr
+		cellId, err := strconv.ParseInt(cellIdStr, 10, 64)
+		if err != nil {
+			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"errMsg": "cellId is int type",
+			})
+			return
+		}
+		req.CellId = cellId
 		req.Branch = branchStr
 	}
 
