@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS public.cell_status
     lock_key text COLLATE pg_catalog."default",
     who text COLLATE pg_catalog."default",
     updated_time timestamp without time zone,
-    updated_at timestamp with time zone,
-    lock_time_from text COLLATE pg_catalog."default",
-    lock_time_to text COLLATE pg_catalog."default"
+    updated_time timestamp without time zone,
+    lock_time_from timestamp without time zone,
+    lock_time_to timestamp without time zone
 )
 ```

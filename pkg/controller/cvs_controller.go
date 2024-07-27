@@ -4,6 +4,7 @@ import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fileDB/pkg/store"
+	"time"
 
 	"fileDB/pkg/domain"
 	"fmt"
@@ -211,6 +212,14 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		return
 	}
 
+	if lockReq.Branch == "" {
+		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"errMsg": fmt.Sprintf("branch can't be empty"),
+		})
+		return
+	}
+
 	cellStatusStore := store.NewCellStatusStore(store.MyDB)
 	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
@@ -224,16 +233,45 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
 	}
+	if lockReq.LockDuration.GetSeconds() <= 10 {
+		errMsg := fmt.Sprintf("cell lock duration should be gt 10s, but it is %v", lockReq.LockDuration)
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		ctx.JSON(http.StatusBadRequest, commentResult)
+		return
+	}
+
+	cellStatus.LockKey = lockReq.LockKey
+	// cellStatus.LockTimeFrom等于当前时间
+
+	cellStatus.LockTimeFrom = time.Now()
+	// cellStatus.LockTimeTo等于当前时间加上一个小时
+	goDuration := time.Duration(lockReq.LockDuration.GetSeconds())*time.Second + time.Duration(lockReq.LockDuration.GetNanos())*time.Nanosecond
+	cellStatus.LockTimeTo = time.Now().Add(goDuration)
+	if cellStatus.CellId == 0 {
+		cellStatus.CellId = lockReq.CellId
+		cellStatus.Branch = lockReq.Branch
+		// 没有添加过，版本就为0
+		cellStatus.LatestVersion = 0
+	}
+
+	result := store.MyDB.Save(&cellStatus)
+	if result.Error != nil {
+		klog.Errorf("failed to save cell status, err:%v", result.Error)
+		commentResult =
+			mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", result.Error)}
+		ctx.JSON(http.StatusInternalServerError, commentResult)
+		return
+	}
+	customTimeFormat := "2006-01-02 15:04:05"
 
 	// add lock record in db
 	response := map[string]interface{}{
-		"id": lockReq.CellId,
-		//
-		//"latestVer":       lockReq.Version,
-		"ns":        lockReq.Branch,
-		"lockStart": "",
-		"lockEnd":   "",
-		"lockKey":   lockReq.LockKey,
+		"id":           lockReq.CellId,
+		"latestVer":    cellStatus.LatestVersion,
+		"branch":       lockReq.Branch,
+		"lockKey":      lockReq.LockKey,
+		"lockTimeFrom": cellStatus.LockTimeFrom.Format(customTimeFormat),
+		"lockTimeTo":   cellStatus.LockTimeTo.Format(customTimeFormat),
 	}
 
 	commentResult = mydomain.CommentResult{Code: 0, Data: response, Msg: "success"}

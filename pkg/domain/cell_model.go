@@ -6,8 +6,8 @@ import (
 
 // BaseModel base模型的定义
 type BaseModel struct {
-	Id          int64     `gorm:"primaryKey;autoIncrement"         json:"id" `
-	UpdatedTime time.Time `gorm:"column:updated_at"                 json:"updated_time" `
+	Id          int64     `gorm:"primaryKey;autoIncrement"            json:"id" `
+	UpdatedTime time.Time `gorm:"column:updated_time"                 json:"updated_time" `
 }
 
 type CellStatus struct {
@@ -18,8 +18,8 @@ type CellStatus struct {
 	Status        string
 	LockKey       string
 	Who           string
-	LockTimeFrom  string
-	LockTimeTo    string
+	LockTimeFrom  time.Time
+	LockTimeTo    time.Time
 }
 
 func (CellStatus) TableName() string {
