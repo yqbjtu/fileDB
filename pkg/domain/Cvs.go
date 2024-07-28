@@ -5,22 +5,22 @@ import (
 )
 
 type CellBase struct {
-	CellId  int64  `json:"cellId"`
-	Version int64  `json:"version"`
-	Branch  string `json:"Branch"`
+	CellId  int64  `json:"cellId" validate:"required,gte=1"  example:"12345"`
+	Version int64  `json:"version" validate:"required,gte=1"  example:"2"`
+	Branch  string `json:"Branch" validate:"required,gt=0,lte=100" binding:"required,gt=0,lte=100"`
 }
 
 type AddVersionReq struct {
 	CellBase
-	LockKey string `json:"LockKey"`
+	LockKey string `json:"LockKey" validate:"required,gt=0,lte=100" binding:"required,gt=0,lte=100"`
 	Comment string `json:"comment"`
 }
 
 // 添加参数校验
 type LockReq struct {
-	CellId  int64  `json:"cellId"`
-	Branch  string `json:"branch"`
-	LockKey string `json:"lockKey"`
+	CellId  int64  `json:"cellId"  validate:"required,gte=1"  example:"12345"`
+	Branch  string `json:"branch"  validate:"required,gt=0,lte=100" binding:"required,gt=0,lte=100"`
+	LockKey string `json:"lockKey" validate:"required,gt=0,lte=100" binding:"required,gt=0,lte=100"`
 	// 这里是为post请求中duration能直接解析，所以使用了google的duration
 	LockDuration duration.Duration `json:"lockDuration"`
 }

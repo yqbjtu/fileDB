@@ -207,7 +207,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	if lockReq.CellId <= 0 {
 		klog.Errorf("cellId can't be <= 0, req:%v", lockReq)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": fmt.Sprintf("cellId is %+v, it should be > 0", lockReq),
+			"errMsg": fmt.Sprintf("cellId is %+v, it should be gte 0", lockReq),
 		})
 		return
 	}
