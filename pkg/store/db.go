@@ -28,6 +28,8 @@ func InitDB() {
 	if err != nil {
 		fmt.Println("open dsn", dsn, "failed!", err)
 	}
+
 	db.AutoMigrate(&domain.CellStatus{})
+	db.AutoMigrate(&domain.CellHistory{})
 	MyDB = db
 }
