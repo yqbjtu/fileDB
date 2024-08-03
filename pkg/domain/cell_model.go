@@ -8,8 +8,7 @@ import (
 // BaseModel base模型的定义
 type BaseModel struct {
 	gorm.Model
-	Id          int64     `gorm:"primaryKey;autoIncrement"            json:"id" `
-	UpdatedTime time.Time `gorm:"column:updated_time"                 json:"updated_time" `
+	Id int64 `gorm:"primaryKey;autoIncrement"            json:"id" `
 }
 
 type CellStatus struct {

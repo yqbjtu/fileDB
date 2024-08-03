@@ -10,9 +10,23 @@ CREATE TABLE IF NOT EXISTS public.cell_status
     status text COLLATE pg_catalog."default",
     lock_key text COLLATE pg_catalog."default",
     who text COLLATE pg_catalog."default",
-    updated_time timestamp without time zone,
-    updated_time timestamp without time zone,
     lock_time_from timestamp without time zone,
     lock_time_to timestamp without time zone
+)
+
+CREATE TABLE IF NOT EXISTS public.cell_status
+(
+    id BIGSERIAL PRIMARY KEY,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    branch text COLLATE pg_catalog."default",
+    cell_id bigint,
+    latest_version bigint,
+    status text COLLATE pg_catalog."default",
+    lock_key text COLLATE pg_catalog."default",
+    who text COLLATE pg_catalog."default",
+    lock_time_from timestamp with time zone,
+    lock_time_to timestamp with time zone
 )
 ```
