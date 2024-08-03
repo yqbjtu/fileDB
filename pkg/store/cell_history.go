@@ -4,6 +4,7 @@ import (
 	"fileDB/pkg/domain"
 	"fmt"
 	"gorm.io/gorm"
+	"k8s.io/klog"
 )
 
 type CellHistoryStore struct {
@@ -17,7 +18,6 @@ func NewCellHistoryStore(db *gorm.DB) *CellHistoryStore {
 }
 
 func (s *CellHistoryStore) Find(cellId int64, branch string) ([]domain.CellHistory, error) {
-
 	var cellHistoryList []domain.CellHistory
 	result := s.db.Find(&cellHistoryList, "cell_id = ? and branch = ?", cellId, branch)
 	if result.Error != nil {
@@ -25,4 +25,15 @@ func (s *CellHistoryStore) Find(cellId int64, branch string) ([]domain.CellHisto
 	}
 
 	return cellHistoryList, nil
+}
+
+func (s *CellHistoryStore) Insert(cellHistory domain.CellHistory) (*domain.CellHistory, error) {
+
+	result := s.db.Save(&cellHistory)
+	if result.Error != nil {
+		klog.Errorf("failed to insert cell history, err:%v", result.Error)
+		return nil, fmt.Errorf("fail to save cell history, err:%v", result.Error)
+	}
+
+	return nil, nil
 }

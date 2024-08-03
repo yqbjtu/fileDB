@@ -1,19 +1,13 @@
 package domain
 
-import (
-	"time"
-)
-
 type CellHistory struct {
 	BaseModel
-	CellId       int64
-	Branch       string
-	Version      int64
-	RequestType  string
-	LockKey      string
-	Who          string
-	LockTimeFrom *time.Time
-	LockTimeTo   *time.Time
+	CellId      int64
+	Branch      string
+	Version     int64
+	RequestType string
+	LockKey     string
+	Who         string
 }
 
 func (CellHistory) TableName() string {

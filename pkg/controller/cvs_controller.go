@@ -3,6 +3,7 @@ package controller
 import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"time"
 
@@ -143,6 +144,18 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		return
 	}
 	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
+
+	cellHistoryStore := store.NewCellHistoryStore(store.MyDB)
+	cellHistoryService := service.NewCellHistoryService(*cellHistoryStore)
+	cellHistory := domain.CellHistory{
+		CellId:      req.CellId,
+		Branch:      req.Branch,
+		Version:     req.Version,
+		RequestType: "CheckinRequest",
+		LockKey:     req.LockKey,
+		Who:         "tester1",
+	}
+	cellHistoryService.Insert(cellHistory)
 	ctx.JSON(http.StatusOK, commentResult)
 }
 
