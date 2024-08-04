@@ -31,5 +31,7 @@ func InitDB() {
 
 	db.AutoMigrate(&domain.CellStatus{})
 	db.AutoMigrate(&domain.CellHistory{})
+	db.AutoMigrate(&domain.CellGisMeta{})
+
 	MyDB = db
 }
