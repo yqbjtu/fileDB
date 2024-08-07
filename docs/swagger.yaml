@@ -1,0 +1,23 @@
+info:
+  contact: {}
+paths:
+  /example/helloworld:
+    get:
+      consumes:
+      - application/json
+      description: url like this /api/v1/query/download?cellId=1&version=1&branch=master
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: We need ID!!
+          schema:
+            type: string
+      summary: download specific version cell file
+      tags:
+      - query
+swagger: "2.0"

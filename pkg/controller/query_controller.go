@@ -29,6 +29,14 @@ func (c *QueryController) FileStatus(ctx *gin.Context) {
 	})
 }
 
+// @Summary download specific version cell file
+// @Description url like this /api/v1/query/download?cellId=1&version=1&branch=master
+// @Tags query
+// @Accept  json
+// @Produce json
+// @Success 200 {string} string	"ok"
+// @Failure 400 {string} string "We need ID!!"
+// @Router /example/helloworld [get]
 func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	var req mydomain.CellBase
 	var err error

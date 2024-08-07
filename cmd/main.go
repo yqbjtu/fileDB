@@ -49,6 +49,7 @@ func main() {
 	store.InitDB()
 	router := gin.Default()
 	myrouter.ConfigRouter(router)
+
 	webServer := &http.Server{
 		Addr:           ":8090",
 		Handler:        router,

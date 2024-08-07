@@ -1,11 +1,19 @@
 package router
 
 import (
+	"fileDB/docs"
 	mycontroller "fileDB/pkg/controller"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func ConfigRouter(router *gin.Engine) {
+
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	// use ginSwagger middleware to serve the API docs
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	cvsGroupEngine := router.Group("api/v1/cvs")
 	cvsController := mycontroller.NewCvsController()
 	cvsGroupEngine.POST("/add", cvsController.CreateNewVersion)

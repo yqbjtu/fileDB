@@ -64,3 +64,10 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
     "LockKey" : "user1"
 }'
 ```
+
+# swagger
+
+http://localhost:8090/swagger/index.html
+swag init -g ./cmd/main.go -o cmd/docs
+http://localhost:8090/swagger/index.html
+swag init
