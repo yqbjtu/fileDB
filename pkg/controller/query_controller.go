@@ -21,6 +21,14 @@ func NewQueryController() *QueryController {
 	return &controller
 }
 
+// @Summary query cell status
+// @Description check cell exist or not, cell is checkout or not etc
+// @Tags query
+// @Accept  json
+// @Produce json
+// @Success 200 {string} string	"ok"
+// @Failure 400 {string} string "We need cellId and branch"
+// @Router /api/v1/cellversion/status [get]
 func (c *QueryController) FileStatus(ctx *gin.Context) {
 	debug.FreeOSMemory()
 	ctx.JSON(http.StatusOK, gin.H{
@@ -30,7 +38,7 @@ func (c *QueryController) FileStatus(ctx *gin.Context) {
 }
 
 // @Summary download specific version cell file
-// @Description url like this /api/v1/query/download?cellId=1&version=1&branch=master
+// @Description download cell file by cellId, version and branch
 // @Tags query
 // @Accept  json
 // @Produce json
