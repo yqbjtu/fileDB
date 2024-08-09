@@ -35,8 +35,8 @@ func (c *QueryController) FileStatus(ctx *gin.Context) {
 // @Accept  json
 // @Produce json
 // @Success 200 {string} string	"ok"
-// @Failure 400 {string} string "We need ID!!"
-// @Router /example/helloworld [get]
+// @Failure 400 {string} string "We need cellId,version and branch"
+// @Router /example/download [get]
 func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	var req mydomain.CellBase
 	var err error

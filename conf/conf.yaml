@@ -7,13 +7,13 @@ OSMConfig:
   dataDir: "/tmp/osmdb/data"
   tempDir: "/tmp/osmdb/temp"
 
-mysql:
-  host: "127.0.0.1"
-  port: 3306
-  database: "test"
-  username: "root"
-  password: "rati0nal"
-  isconn: true
+postgres:
+  host: "10.9.60.234"
+  dbname: "filedb"
+  port: 5432
+  user: "user1"
+  passwd: "rati0nal"
+  batchSize: 3000
 
 logConfig:
   logPath: ./access.log
