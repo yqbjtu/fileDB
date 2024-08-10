@@ -65,6 +65,12 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
 }'
 ```
 
+# find cell status
+
+```json
+
+curl --location --request GET 'http://localhost:8090/api/v1/query/cellversion/status?cellId=20007114&version=1&namespace=main'
+```
 # swagger
 
 http://localhost:8090/swagger/index.html
