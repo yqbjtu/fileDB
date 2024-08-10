@@ -8,7 +8,6 @@ import (
 	"k8s.io/klog"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"strconv"
 )
 
@@ -21,6 +20,27 @@ func NewQueryController() *QueryController {
 	return &controller
 }
 
+func getCellBaseFromParameter(ctx *gin.Context) (mydomain.CellBase, error) {
+	var req mydomain.CellBase
+	//var err error
+	cellIdStr := ctx.Query("cellId")
+	branchStr := ctx.Query("branch")
+	if cellIdStr == "" || branchStr == "" {
+		klog.Errorf("cellId '%s'/branch '%s' can't be empty", cellIdStr, branchStr)
+		return req, fmt.Errorf("cellId or branch is empty")
+	} else {
+		cellId, err := strconv.ParseInt(cellIdStr, 10, 64)
+		if err != nil {
+			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
+			return req, fmt.Errorf("cellId is int type")
+		}
+		req.CellId = cellId
+		req.Branch = branchStr
+	}
+
+	return req, nil
+}
+
 // @Summary query cell status
 // @Description check cell exist or not, cell is checkout or not etc
 // @Tags query
@@ -30,10 +50,17 @@ func NewQueryController() *QueryController {
 // @Failure 400 {string} string "We need cellId and branch"
 // @Router /api/v1/cellversion/status [get]
 func (c *QueryController) FileStatus(ctx *gin.Context) {
-	debug.FreeOSMemory()
+	req, err := getCellBaseFromParameter(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"errMsg": err.Error(),
+		})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": 0,
-		"msg":  "create user successfully",
+		"msg":  fmt.Sprintf("cellId:%d, branch:%s", req.CellId, req.Branch),
 	})
 }
 
@@ -122,35 +149,18 @@ func (c *QueryController) FileBBoxInfo(ctx *gin.Context) {
 // query the cell history , such as addVersion,
 func (c *QueryController) History(ctx *gin.Context) {
 	var req mydomain.CellBase
-	//var err error
-	cellIdStr := ctx.Query("cellId")
-	//pageSizeStr := ctx.Query("pageSize")
-	//pageNumStr := ctx.Query("pageNum")
-	branchStr := ctx.Query("branch")
-
-	if cellIdStr == "" || branchStr == "" {
-		klog.Errorf("cellId '%s'/branch '%s' can't be empty", cellIdStr, branchStr)
+	req, err := getCellBaseFromParameter(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellId or branch is empty",
+			"errMsg": err.Error(),
 		})
 		return
-	} else {
-		cellId, err := strconv.ParseInt(cellIdStr, 10, 64)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "cellId is int type",
-			})
-			return
-		}
-		req.CellId = cellId
-		req.Branch = branchStr
 	}
 
 	// query db to find the history
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": nil,
-		"msg":  "ok",
+		"msg":  fmt.Sprintf("cellId:%d, branch:%s", req.CellId, req.Branch),
 	})
 }
