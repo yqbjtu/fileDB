@@ -4,12 +4,12 @@ import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fileDB/pkg/store"
+	"fileDB/pkg/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 type QueryController struct {
@@ -21,42 +21,6 @@ func NewQueryController() *QueryController {
 	return &controller
 }
 
-func getCellBaseFromParameter(ctx *gin.Context, isWithVersion bool) (mydomain.CellBase, error) {
-	var req mydomain.CellBase
-	var err error
-	//var err error
-	cellIdStr := ctx.Query("cellId")
-	branchStr := ctx.Query("branch")
-	if cellIdStr == "" || branchStr == "" {
-		klog.Errorf("cellId '%s'/branch '%s' can't be empty", cellIdStr, branchStr)
-		return req, fmt.Errorf("cellId or branch is empty")
-	} else {
-		cellId, err := strconv.ParseInt(cellIdStr, 10, 64)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
-			return req, fmt.Errorf("cellId should be int type")
-		}
-		req.CellId = cellId
-		req.Branch = branchStr
-	}
-
-	if isWithVersion {
-		versionStr := ctx.Query("version")
-		if versionStr == "" {
-			klog.Errorf("version '%s' can't be empty", versionStr)
-			return req, fmt.Errorf("version is empty")
-		}
-
-		req.Version, err = strconv.ParseInt(versionStr, 10, 32)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", versionStr, err)
-			return req, fmt.Errorf("version should be int type")
-		}
-	}
-
-	return req, nil
-}
-
 // @Summary query cell status
 // @Description check cell exist or not, cell is checkout or not etc
 // @Tags query
@@ -66,7 +30,7 @@ func getCellBaseFromParameter(ctx *gin.Context, isWithVersion bool) (mydomain.Ce
 // @Failure 400 {string} string "We need cellId and branch"
 // @Router /api/v1/cellversion/status [get]
 func (c *QueryController) FileStatus(ctx *gin.Context) {
-	req, err := getCellBaseFromParameter(ctx, false)
+	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": err.Error(),
@@ -109,7 +73,7 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	var req mydomain.CellBase
 	var err error
 
-	req, err = getCellBaseFromParameter(ctx, true)
+	req, err = util.GetCellBaseFromParameter(ctx, true)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": err.Error(),
@@ -159,7 +123,7 @@ func (c *QueryController) FileBBoxInfo(ctx *gin.Context) {
 // History query the cell history , such as addVersion, lock,. unlock, etc
 func (c *QueryController) History(ctx *gin.Context) {
 	var req mydomain.CellBase
-	req, err := getCellBaseFromParameter(ctx, false)
+	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"errMsg": err.Error(),

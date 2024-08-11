@@ -5,6 +5,7 @@ import (
 	mydomain "fileDB/pkg/domain"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
+	"fileDB/pkg/util"
 	"time"
 
 	"fileDB/pkg/domain"
@@ -28,41 +29,15 @@ func NewCvsController() *CvsController {
 func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	var req mydomain.AddVersionReq
 	var err error
-	cellIdStr := ctx.Query("cellId")
-	versionStr := ctx.Query("version")
-	branchStr := ctx.Query("branch")
+
 	lockKeyStr := ctx.Query("lockKey")
 
-	if cellIdStr == "" || branchStr == "" || versionStr == "" || lockKeyStr == "" {
-		klog.Errorf("cellId '%s' can't be empty", cellIdStr)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellId/version/ is empty",
-		})
-		return
-	} else {
-		req.Version, err = strconv.ParseInt(versionStr, 10, 32)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", versionStr, err)
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "version is not int type",
-			})
-			return
-		}
+	req.CellBase, err = util.GetCellBaseFromParameter(ctx, false)
+	// lockKey can be empty when the cell is not locked by any key
+	req.LockKey = lockKeyStr
 
-		cellId, err := strconv.ParseInt(cellIdStr, 10, 32)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "cellId is not int type",
-			})
-			return
-		}
-
-		req.CellId = cellId
-		req.Branch = branchStr
-		req.LockKey = lockKeyStr
-	}
-
+	cellIdStr := ctx.Query("cellId")
+	branchStr := ctx.Query("branch")
 	klog.Infof("add new file version, req:%v", req)
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
