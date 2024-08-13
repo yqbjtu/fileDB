@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
 	"net/http"
-	"strconv"
 )
 
 type CvsController struct {
@@ -143,45 +142,14 @@ func (c *CvsController) GetOneUser(context *gin.Context) {
 	})
 }
 
-// cellId=1507888&branch=test
-func (c *CvsController) Status(context *gin.Context) {
-	cellIdStr := context.Query("cellId")
-	branch := context.Query("branch")
-	var cellId int64
-	var err error
-	if cellIdStr == "" {
-		klog.Errorf("cellId can't be empty", cellIdStr)
-		context.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": "cellId is empty",
-		})
-		return
-	} else {
-		cellId, err = strconv.ParseInt(cellIdStr, 10, 64)
-		if err != nil {
-			klog.Errorf("failed to convert (%s)to int64, err:%v", cellIdStr, err)
-			context.JSON(http.StatusBadRequest, gin.H{
-				"errMsg": "cellId is int type",
-			})
-			return
-		}
-	}
-
-	if branch == "" {
-		branch = "main"
-		klog.Infof("get by cellId %v, use default branch %q", cellId, branch)
-	} else {
-		klog.Infof("get by cellId %v, branch %q", cellId, branch)
-	}
-	branches := [3]string{"main", "redo", "test"}
-
-	response := map[string]interface{}{
-		"version":  5,
-		"cellId":   cellId,
-		"branches": branches,
-	}
-	context.JSON(http.StatusOK, response)
-}
-
+// @Summary lock the cell
+// @Description lock the cell by cellId and branch
+// @Tags query
+// @Accept  json
+// @Produce json
+// @Success 200 {string} string	"ok"
+// @Failure 400 {string} string "We need cellId and branch"
+// @Router /api/v1/csv/lock [post]
 func (c *CvsController) Lock(ctx *gin.Context) {
 	// 从body中解析出cellId, plus1Ver, , branch
 	var commentResult mydomain.CommentResult
