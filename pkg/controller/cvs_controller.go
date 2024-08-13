@@ -153,26 +153,10 @@ func (c *CvsController) GetOneUser(context *gin.Context) {
 func (c *CvsController) Lock(ctx *gin.Context) {
 	// 从body中解析出cellId, plus1Ver, , branch
 	var commentResult mydomain.CommentResult
-	lockReq := mydomain.LockReq{}
-	if err := ctx.ShouldBindJSON(&lockReq); err != nil {
+	lockReq, err := getLockUnLockReq(ctx)
+	if err != nil {
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
 		ctx.JSON(http.StatusBadRequest, commentResult)
-		return
-	}
-
-	if lockReq.CellId <= 0 {
-		klog.Errorf("cellId can't be <= 0, req:%v", lockReq)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": fmt.Sprintf("cellId is %+v, it should be gte 0", lockReq),
-		})
-		return
-	}
-
-	if lockReq.Branch == "" {
-		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": fmt.Sprintf("branch can't be empty"),
-		})
 		return
 	}
 
@@ -236,31 +220,28 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// UnLock 幂等操作， 也就是如果该cell没有被加锁，调用unlock会直接成功
-// 给出英文注释
-
-func (c *CvsController) UnLock(ctx *gin.Context) {
-	var commentResult mydomain.CommentResult
+func getLockUnLockReq(ctx *gin.Context) (mydomain.LockReq, error) {
 	lockReq := mydomain.LockReq{}
 	if err := ctx.ShouldBindJSON(&lockReq); err != nil {
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
-		ctx.JSON(http.StatusBadRequest, commentResult)
-		return
+		return lockReq, fmt.Errorf("fail to parse http body, err:%v", err)
 	}
 
 	if lockReq.CellId <= 0 {
-		klog.Errorf("cellId can't be <= 0, req:%v", lockReq)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": fmt.Sprintf("cellId is %d, it should be > 0", lockReq.CellId),
-		})
-		return
+		return lockReq, fmt.Errorf("cellId is %d, it should be > 0", lockReq.CellId)
 	}
 
 	if lockReq.Branch == "" {
 		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": fmt.Sprintf("branch can't be empty"),
-		})
+		return lockReq, fmt.Errorf("branch can't be empty")
+	}
+}
+
+func (c *CvsController) UnLock(ctx *gin.Context) {
+	var commentResult mydomain.CommentResult
+	lockReq, err := getLockUnLockReq(ctx)
+	if err != nil {
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
+		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
 	}
 
@@ -305,26 +286,4 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
 	ctx.JSON(http.StatusOK, commentResult)
 	return
-
-}
-
-/*
-// 匹配的url格式:  /usersfind?username=tom&email=test1@163.com
-*/
-func (c *CvsController) FindUsers(ctx *gin.Context) {
-	userName := ctx.DefaultQuery("username", "张三")
-	email := ctx.Query("email")
-	// 执行实际搜索，这里只是示例
-	ctx.String(http.StatusOK, "search user by %q %q", userName, email)
-}
-
-func (c *CvsController) UpdateOneUser(ctx *gin.Context) {
-	userId := ctx.Param("userId")
-	klog.Infof("update user by id %q", userId)
-}
-
-func (c *CvsController) DeleteOneUser(ctx *gin.Context) {
-	userId := ctx.Param("userId")
-	klog.Infof("delete user by id %q", userId)
-
 }
