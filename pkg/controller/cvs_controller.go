@@ -234,6 +234,8 @@ func getLockUnLockReq(ctx *gin.Context) (mydomain.LockReq, error) {
 		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
 		return lockReq, fmt.Errorf("branch can't be empty")
 	}
+
+	return lockReq, nil
 }
 
 func (c *CvsController) UnLock(ctx *gin.Context) {

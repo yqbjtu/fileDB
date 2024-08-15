@@ -24,7 +24,7 @@ func ConfigRouter(router *gin.Engine) {
 	queryController := mycontroller.NewQueryController()
 	queryGroupEngine.GET("/download", queryController.DownloadFile)
 	queryGroupEngine.GET("/history", queryController.History)
-	queryGroupEngine.GET("/cellversion/status", cvsController.Status)
+	queryGroupEngine.GET("/cellversion/status", queryController.CellStatus)
 
 	miscGroupEngine := router.Group("api/v1/mics")
 	miscController := mycontroller.NewMiscController()

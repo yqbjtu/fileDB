@@ -29,7 +29,7 @@ func NewQueryController() *QueryController {
 // @Success 200 {string} string	"ok"
 // @Failure 400 {string} string "We need cellId and branch"
 // @Router /api/v1/cellversion/status [get]
-func (c *QueryController) FileStatus(ctx *gin.Context) {
+func (c *QueryController) CellStatus(ctx *gin.Context) {
 	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
