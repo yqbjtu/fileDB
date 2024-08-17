@@ -1,27 +1,50 @@
 package main
 
 import (
+	"context"
 	"fileDB/pkg/config"
+	"fileDB/pkg/controller"
 	"fileDB/pkg/log"
 	myrouter "fileDB/pkg/router"
+	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/fx"
 	"k8s.io/klog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
+// ServiceLifetimeHooks -
+func ServiceLifetimeHooks(lc fx.Lifecycle, srv *http.Server) {
+	lc.Append(
+		fx.Hook{
+			OnStart: func(ctx context.Context) error {
+				fmt.Printf("starting web server listen and serve at %v ...", srv.Addr)
+				go func() {
+					if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+						fmt.Printf("listen: %s\n", err)
+					}
+				}()
+				return nil
+			},
+			OnStop: func(ctx context.Context) error {
+				fmt.Print("closing web server ...")
+				ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+				defer cancel()
+				return srv.Shutdown(ctx)
+			},
+		},
+	)
+}
+
 /*
-  GET http://127.0.0.1:8090/users
-  GET http://127.0.0.1:8090/usersfind?username=tom&email=test1@163.com
-  PUT http://127.0.0.1:8090/users  body {"userName":"tester1"}
-  启动参数 --log_file=C:\F\ginportdemo.log --logtostderr=false --alsologtostderr=true
-  --logtostderr=false表示输出到日志文件中，不再标准输出输出中展示，该参数默认值为true，
-  --alsologtostderr[=false]: 同时输出日志到标准错误控制台和文件， 该参数为true后控制台和日志文件同时都有
-  这是简单示例gin运行简单示例
+ the main function
 */
 
 func main() {
@@ -45,6 +68,33 @@ func main() {
 	// init the log setting
 	sugarLogger := log.InitLogger(&config.GetConfig().LogConfig)
 	defer sugarLogger.Sync()
+
+	app := fx.New(
+		fx.Provide(fx.Annotated{
+			Name: "addr",
+			Target: func() string {
+				return fmt.Sprintf(":%d", config.GetConfig().Port)
+			},
+		}),
+		fx.Provide(func() context.Context {
+			return context.Background()
+		}),
+		store.Module,
+		service.Module,
+		controller.Module,
+		myrouter.Module,
+		fx.Invoke(ServiceLifetimeHooks),
+	)
+
+	shutdowner := make(chan os.Signal, 1)
+	signal.Notify(shutdowner, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGCHLD)
+
+	go func() {
+		if err := app.Start(context.Background()); err != nil {
+			fmt.Printf("Failed to start the application: %v\n", err)
+			os.Exit(1)
+		}
+	}()
 
 	store.InitDB()
 	router := gin.Default()
