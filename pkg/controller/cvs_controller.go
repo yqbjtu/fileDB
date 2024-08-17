@@ -17,10 +17,15 @@ import (
 
 type CvsController struct {
 	// service or some to access DB method
+	cellHistoryService *service.CellHistoryService
+	cellStatusStore    *store.CellStatusStore
 }
 
-func NewCvsController() *CvsController {
-	controller := CvsController{}
+func NewCvsController(cellHistoryService *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *CvsController {
+	controller := CvsController{
+		cellHistoryService: cellHistoryService,
+		cellStatusStore:    cellStatusStore,
+	}
 	return &controller
 }
 
@@ -61,11 +66,10 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		return
 	}
 
-	var items []domain.CellStatus
-	result := store.MyDB.Find(&items)
+	result, err := c.cellStatusStore.FindAll()
 	fmt.Println("result:", result)
-	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	cellStatus, err := cellStatusStore.Find(req.CellId, branchStr)
+
+	cellStatus, err := c.cellStatusStore.Find(req.CellId, branchStr)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
 	}
@@ -76,10 +80,10 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		cellStatus.LatestVersion = req.Version
 		cellStatus.LockKey = ""
 		cellStatus.Branch = branchStr
-		result = store.MyDB.Save(&cellStatus)
-		if result.Error != nil {
-			klog.Errorf("failed to save cell status, err:%v", result.Error)
-			commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", result.Error)}
+		_, err = c.cellStatusStore.Save(cellStatus)
+		if err != nil {
+			klog.Errorf("failed to save cell status, err:%v", err)
+			commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", err)}
 			ctx.JSON(http.StatusOK, commentResult)
 			return
 		} else {
@@ -110,17 +114,15 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	// update the cell status with latestVersion
 	cellStatus.LatestVersion = req.Version
 	cellStatus.LockKey = ""
-	result = store.MyDB.Save(&cellStatus)
-	if result.Error != nil {
-		klog.Errorf("failed to save cell status, err:%v", result.Error)
-		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", result.Error)}
+	_, err = c.cellStatusStore.Save(cellStatus)
+	if err != nil {
+		klog.Errorf("failed to save cell status, err:%v", err)
+		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
 		ctx.JSON(http.StatusOK, commentResult)
 		return
 	}
 	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
 
-	cellHistoryStore := store.NewCellHistoryStore(store.MyDB)
-	cellHistoryService := service.NewCellHistoryService(*cellHistoryStore)
 	cellHistory := domain.CellHistory{
 		CellId:      req.CellId,
 		Branch:      req.Branch,
@@ -129,7 +131,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		LockKey:     req.LockKey,
 		Who:         "tester1",
 	}
-	cellHistoryService.Insert(cellHistory)
+	c.cellHistoryService.Insert(cellHistory)
 	ctx.JSON(http.StatusOK, commentResult)
 }
 
@@ -160,8 +162,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		return
 	}
 
-	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
+	cellStatus, err := c.cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
 	}
@@ -247,8 +248,7 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 		return
 	}
 
-	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	cellStatus, err := cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
+	cellStatus, err := c.cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
 	}

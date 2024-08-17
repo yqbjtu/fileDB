@@ -6,10 +6,10 @@ import (
 )
 
 type CellHistoryService struct {
-	bizStore store.CellHistoryStore
+	bizStore *store.CellHistoryStore
 }
 
-func NewCellHistoryService(bizStore store.CellHistoryStore) *CellHistoryService {
+func NewCellHistoryService(bizStore *store.CellHistoryStore) *CellHistoryService {
 	return &CellHistoryService{
 		bizStore: bizStore,
 	}

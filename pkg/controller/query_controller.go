@@ -3,6 +3,7 @@ package controller
 import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"fileDB/pkg/util"
 	"fmt"
@@ -14,10 +15,15 @@ import (
 
 type QueryController struct {
 	// service or some to access DB method
+	cellHistoryService *service.CellHistoryService
+	cellStatusStore    *store.CellStatusStore
 }
 
-func NewQueryController() *QueryController {
-	controller := QueryController{}
+func NewQueryController(cellHistoryService *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *QueryController {
+	controller := QueryController{
+		cellHistoryService: cellHistoryService,
+		cellStatusStore:    cellStatusStore,
+	}
 	return &controller
 }
 

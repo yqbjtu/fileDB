@@ -10,7 +10,6 @@ import (
 	"fileDB/pkg/store"
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"k8s.io/klog"
 	"net/http"
@@ -96,19 +95,30 @@ func main() {
 		}
 	}()
 
-	store.InitDB()
-	router := gin.Default()
-	myrouter.ConfigRouter(router)
+	<-shutdowner
 
-	webServer := &http.Server{
-		Addr:           ":8090",
-		Handler:        router,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := app.Stop(ctx); err != nil {
+		fmt.Printf("Failed to gracefully stop the application: %v\n", err)
+		os.Exit(2)
 	}
 
-	webServer.ListenAndServe()
+	fmt.Println("Application stopped gracefully")
+	//store.InitDB()
+	//router := gin.Default()
+	//myrouter.ConfigRouter(router)
+	//
+	//webServer := &http.Server{
+	//	Addr:           ":8090",
+	//	Handler:        router,
+	//	ReadTimeout:    15 * time.Second,
+	//	WriteTimeout:   15 * time.Second,
+	//	MaxHeaderBytes: 1 << 20,
+	//}
+	//
+	//webServer.ListenAndServe()
 
 	//router.Run()
 	// router.Run(":8090") 也能运行指定端口和ip上

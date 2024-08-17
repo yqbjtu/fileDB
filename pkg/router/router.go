@@ -55,13 +55,13 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 		baseEngine := e.Group(prefix)
 
 		{
-			cvsGroupEngine := e.Group(baseEngine.BasePath() + "api/v1/cvs")
+			cvsGroupEngine := e.Group(baseEngine.BasePath() + "/cvs")
 			cvsGroupEngine.POST("/add", r.cvsController.CreateNewVersion)
 			cvsGroupEngine.POST("/lock", r.cvsController.Lock)
 			cvsGroupEngine.POST("/unlock", r.cvsController.UnLock)
 		}
 		{
-			miscGroupEngine := e.Group(baseEngine.BasePath() + "api/v1/mics")
+			miscGroupEngine := e.Group(baseEngine.BasePath() + "/mics")
 			miscController := mycontroller.NewMiscController()
 			miscGroupEngine.GET("/freeMemory", miscController.FreeMemory)
 		}
