@@ -1,6 +1,6 @@
-export APP_NAME=fileDB
+export APP_NAME=filedb
 export BUILD_VERSION=1.0.0
-export BUILD_IMAGE=fileDB/${APP_NAME}
+export BUILD_IMAGE=filedb/${APP_NAME}
 
 
 echo "docker build -t ${BUILD_IMAGE}:${BUILD_VERSION} ."

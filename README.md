@@ -77,3 +77,11 @@ http://localhost:8090/swagger/index.html
 swag init -g ./cmd/main.go -o cmd/docs
 http://localhost:8090/swagger/index.html
 swag init
+
+# build
+
+under project root dir
+```shell
+build/.build.sh
+```
+`

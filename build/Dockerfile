@@ -1,14 +1,19 @@
 FROM golang:1.23 as builder
 
-ARG DIR=/go/src/fileDB
-WORKDIR $DIR
-
-# Copy the go source
-COPY .. ./
-#
 ENV GO111MODULE=on
 ENV GOPROXY=https://goproxy.cn,direct
+
+ARG DIR=/workspace
+WORKDIR $DIR
+
+
+# Copy the go source including go.mod and go.sum files
+COPY go.mod go.sum ./
 RUN go mod download
+
+
+# Copy the rest of the source code
+COPY . .
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o fileDB $DIR
@@ -33,4 +38,4 @@ WORKDIR /bin/
 CMD [ "fileDB" ]
 
 # use hardcode , not %DIR
-COPY --from=builder /go/src/fileDB/fileDB /usr/local/bin/
+COPY --from=builder /workspace/fileDB /usr/local/bin/
