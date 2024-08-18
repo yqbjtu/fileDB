@@ -62,8 +62,14 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 		}
 		{
 			miscGroupEngine := e.Group(baseEngine.BasePath() + "/mics")
-			miscController := mycontroller.NewMiscController()
-			miscGroupEngine.GET("/freeMemory", miscController.FreeMemory)
+			miscGroupEngine.GET("/freeMemory", r.miscController.FreeMemory)
+			miscGroupEngine.GET("/buildInfo", r.miscController.BuildInfo)
+		}
+		{
+			queryGroupEngine := e.Group(baseEngine.BasePath() + "/query")
+			queryGroupEngine.GET("/download", r.queryController.DownloadFile)
+			queryGroupEngine.GET("/history", r.queryController.History)
+			queryGroupEngine.GET("/status", r.queryController.CellStatus)
 		}
 	}
 

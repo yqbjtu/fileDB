@@ -69,7 +69,7 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
 
 ```json
 
-curl --location --request GET 'http://localhost:8090/api/v1/query/cellversion/status?cellId=20007114&version=1&namespace=main'
+curl --location --request GET 'http://localhost:8090/api/v1/query/status?cellId=20007114&version=1&branch=main'
 ```
 # swagger
 

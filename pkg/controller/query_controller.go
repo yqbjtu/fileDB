@@ -44,8 +44,7 @@ func (c *QueryController) CellStatus(ctx *gin.Context) {
 		return
 	}
 
-	cellStatusStore := store.NewCellStatusStore(store.MyDB)
-	cellStatus, err := cellStatusStore.Find(req.CellId, req.Branch)
+	cellStatus, err := c.cellStatusStore.Find(req.CellId, req.Branch)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"errMsg": err.Error(),

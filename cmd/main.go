@@ -78,6 +78,7 @@ func main() {
 		fx.Provide(func() context.Context {
 			return context.Background()
 		}),
+		config.Module,
 		store.Module,
 		service.Module,
 		controller.Module,

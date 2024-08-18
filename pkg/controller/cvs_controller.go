@@ -17,12 +17,16 @@ import (
 
 type CvsController struct {
 	// service or some to access DB method
+	globalConfig       *config.GlobalConfig
 	cellHistoryService *service.CellHistoryService
 	cellStatusStore    *store.CellStatusStore
 }
 
-func NewCvsController(cellHistoryService *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *CvsController {
+func NewCvsController(globalConfig *config.GlobalConfig,
+	cellHistoryService *service.CellHistoryService,
+	cellStatusStore *store.CellStatusStore) *CvsController {
 	controller := CvsController{
+		globalConfig:       globalConfig,
 		cellHistoryService: cellHistoryService,
 		cellStatusStore:    cellStatusStore,
 	}
@@ -36,12 +40,10 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 
 	lockKeyStr := ctx.Query("lockKey")
 
-	req.CellBase, err = util.GetCellBaseFromParameter(ctx, false)
+	req.CellBase, err = util.GetCellBaseFromParameter(ctx, true)
 	// lockKey can be empty when the cell is not locked by any key
 	req.LockKey = lockKeyStr
 
-	cellIdStr := ctx.Query("cellId")
-	branchStr := ctx.Query("branch")
 	klog.Infof("add new file version, req:%v", req)
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
@@ -55,7 +57,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
 	filename := fmt.Sprintf("%d@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
 	// 定义文件保存路径
-	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
+	baseOsmDataDir := c.globalConfig.OSMConfig.DataDir
 	savePath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Branch) + filename
 
 	// 将上传的文件存储到服务器上指定的位置
@@ -69,7 +71,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	result, err := c.cellStatusStore.FindAll()
 	fmt.Println("result:", result)
 
-	cellStatus, err := c.cellStatusStore.Find(req.CellId, branchStr)
+	cellStatus, err := c.cellStatusStore.Find(req.CellId, req.Branch)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
 	}
@@ -79,7 +81,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		cellStatus.CellId = req.CellId
 		cellStatus.LatestVersion = req.Version
 		cellStatus.LockKey = ""
-		cellStatus.Branch = branchStr
+		cellStatus.Branch = req.Branch
 		_, err = c.cellStatusStore.Save(cellStatus)
 		if err != nil {
 			klog.Errorf("failed to save cell status, err:%v", err)
@@ -96,7 +98,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	// the req.Version should be the latest version + 1
 	expectedVersion := cellStatus.LatestVersion + 1
 	if req.Version != expectedVersion {
-		errMsg := fmt.Sprintf("cellId:%s, current latest version is %d, expectedVersion should be %d, not %d", cellIdStr,
+		errMsg := fmt.Sprintf("cellId:%d, current latest version is %d, expectedVersion should be %d, not %d", req.CellId,
 			cellStatus.LatestVersion, expectedVersion, req.Version)
 		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
 		ctx.JSON(http.StatusBadRequest, commentResult)
@@ -105,7 +107,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 
 	// the cell should not be locked, or it is locked by req.LockKey
 	if cellStatus.LockKey != "" && cellStatus.LockKey != req.LockKey {
-		errMsg := fmt.Sprintf("cellId:%s is locked by %q, not %q", cellIdStr, cellStatus.LockKey, req.LockKey)
+		errMsg := fmt.Sprintf("cellId:%d is locked by %q, not %q", req.CellId, cellStatus.LockKey, req.LockKey)
 		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
 		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
@@ -131,6 +133,7 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		LockKey:     req.LockKey,
 		Who:         "tester1",
 	}
+
 	c.cellHistoryService.Insert(cellHistory)
 	ctx.JSON(http.StatusOK, commentResult)
 }
@@ -197,11 +200,11 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		cellStatus.LatestVersion = 0
 	}
 
-	result := store.MyDB.Save(&cellStatus)
-	if result.Error != nil {
-		klog.Errorf("failed to save cell status, err:%v", result.Error)
+	_, err = c.cellStatusStore.Save(cellStatus)
+	if err != nil {
+		klog.Errorf("failed to save cell status, err:%v", err)
 		commentResult =
-			mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", result.Error)}
+			mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
 		ctx.JSON(http.StatusInternalServerError, commentResult)
 		return
 	}
@@ -274,10 +277,10 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	cellStatus.LockKey = ""
 	cellStatus.LockTimeFrom = nil
 	cellStatus.LockTimeTo = nil
-	result := store.MyDB.Save(&cellStatus)
-	if result.Error != nil {
-		klog.Errorf("failed to save cell status, err:%v", result.Error)
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", result.Error)}
+	_, err = c.cellStatusStore.Save(cellStatus)
+	if err != nil {
+		klog.Errorf("failed to save cell status, err:%v", err)
+		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
 		ctx.JSON(http.StatusInternalServerError, commentResult)
 		return
 
