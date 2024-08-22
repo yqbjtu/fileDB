@@ -33,7 +33,14 @@ func NewCvsController(globalConfig *config.GlobalConfig,
 	return &controller
 }
 
-// CreateNewVersion 文件提交一个新版本，
+// @Summary CreateNewVersion 提交一个新版本，
+// @Description download cell file by cellId, version and branch
+// @Tags query
+// @Accept  json
+// @Produce json
+// @Success 200 {object} mydomain.CommentResult "ok"
+// @Failure 400 {string} string "cellId,version and branch is required"
+// @Router /api/v1/cvs/add[post]
 func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 	var req mydomain.AddVersionReq
 	var err error
