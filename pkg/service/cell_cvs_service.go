@@ -1,10 +1,12 @@
 package service
 
 import (
+	"fileDB/pkg/common"
 	"fileDB/pkg/config"
 	"fileDB/pkg/domain"
 	"fmt"
 	"k8s.io/klog"
+	"time"
 )
 
 type CellCvsService struct {
@@ -28,7 +30,6 @@ func NewCellCvsService(
 }
 
 func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.CommentResult, error) {
-
 	cellStatus, err := s.cellStatusSvc.Find(req.CellId, req.Branch)
 	if err != nil {
 		klog.Errorf("failed to find cell status, err:%v", err)
@@ -96,7 +97,64 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.Comment
 	return commentResult, nil
 }
 
-func (s *CellCvsService) Lock(history domain.CellHistory) error {
+func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommentResult, error) {
+	cellStatus, err := s.cellStatusSvc.Find(lockReq.CellId, lockReq.Branch)
+	if err != nil {
+		klog.Errorf("failed to find cell status, err:%v", err)
+	}
 
-	return nil
+	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
+		errMsg := fmt.Sprintf("cell %d has already been locked by %s now, so it can't be locked by %s again",
+			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
+		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		return commentResult, fmt.Errorf(errMsg)
+	}
+	if lockReq.LockDuration.GetSeconds() <= 10 {
+		errMsg := fmt.Sprintf("cell lock duration should be gt 10s, but it is %v", lockReq.LockDuration)
+		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
+		return commentResult, fmt.Errorf(errMsg)
+	}
+
+	cellStatus.LockKey = lockReq.LockKey
+	// cellStatus.LockTimeFrom等于当前时间
+	fromTime := time.Now()
+	cellStatus.LockTimeFrom = &fromTime
+
+	// cellStatus.LockTimeTo等于当前时间加上一个小时
+	goDuration := time.Duration(lockReq.LockDuration.GetSeconds())*time.Second + time.Duration(lockReq.LockDuration.GetNanos())*time.Nanosecond
+	toTime := time.Now().Add(goDuration)
+	cellStatus.LockTimeTo = &toTime
+	if cellStatus.CellId == 0 {
+		cellStatus.CellId = lockReq.CellId
+		cellStatus.Branch = lockReq.Branch
+		// 没有添加过，版本就为0
+		cellStatus.LatestVersion = 0
+	}
+
+	_, err = s.cellStatusSvc.Insert(cellStatus)
+	if err != nil {
+		klog.Errorf("failed to save cell status, err:%v", err)
+		commentResult :=
+			domain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
+		return commentResult, common.ErrDBOperationFailure
+	}
+
+	customTimeFormat := "2006-01-02 15:04:05"
+	// add lock record in db
+	response := map[string]interface{}{
+		"id":           lockReq.CellId,
+		"latestVer":    cellStatus.LatestVersion,
+		"branch":       lockReq.Branch,
+		"lockKey":      lockReq.LockKey,
+		"lockTimeFrom": cellStatus.LockTimeFrom.Format(customTimeFormat),
+		"lockTimeTo":   cellStatus.LockTimeTo.Format(customTimeFormat),
+	}
+
+	commentResult := domain.CommentResult{Code: 0, Data: response, Msg: "success"}
+	return commentResult, nil
+}
+
+func (s *CellCvsService) UnLock(req domain.AddVersionReq) (domain.CommentResult, error) {
+
+	return domain.CommentResult{}, nil
 }

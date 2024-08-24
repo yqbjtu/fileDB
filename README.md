@@ -46,7 +46,7 @@ curl --location --request GET 'http://localhost:8090/api/v1/query/download?cellI
 curl --location --request POST 'http://localhost:8090/api/v1/cvs/lock' \
 --data-raw '{
     "cellId" :20007114,
-    "branch" :"dev",
+    "branch" :"main",
     "LockKey" : "user1",
     "lockDuration": {
       "seconds": 300

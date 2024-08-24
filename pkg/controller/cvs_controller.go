@@ -1,13 +1,13 @@
 package controller
 
 import (
+	"errors"
+	"fileDB/pkg/common"
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"fileDB/pkg/util"
-	"time"
-
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
@@ -106,63 +106,18 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		return
 	}
 
-	cellStatus, err := c.cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
+	commentResult, err = c.cellCvsSvc.Lock(&lockReq)
 	if err != nil {
-		klog.Errorf("failed to find cell status, err:%v", err)
-	}
+		if errors.Is(err, common.ErrDBOperationFailure) {
+			ctx.JSON(http.StatusInternalServerError, commentResult)
+		} else {
+			ctx.JSON(http.StatusBadRequest, commentResult)
+		}
 
-	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
-		errMsg := fmt.Sprintf("cell %d has already been locked by %s now, so it can't be locked by %s again",
-			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		ctx.JSON(http.StatusBadRequest, commentResult)
-		return
+	} else {
+		ctx.JSON(http.StatusOK, commentResult)
 	}
-	if lockReq.LockDuration.GetSeconds() <= 10 {
-		errMsg := fmt.Sprintf("cell lock duration should be gt 10s, but it is %v", lockReq.LockDuration)
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		ctx.JSON(http.StatusBadRequest, commentResult)
-		return
-	}
-
-	cellStatus.LockKey = lockReq.LockKey
-	// cellStatus.LockTimeFrom等于当前时间
-	fromTime := time.Now()
-	cellStatus.LockTimeFrom = &fromTime
-
-	// cellStatus.LockTimeTo等于当前时间加上一个小时
-	goDuration := time.Duration(lockReq.LockDuration.GetSeconds())*time.Second + time.Duration(lockReq.LockDuration.GetNanos())*time.Nanosecond
-	toTime := time.Now().Add(goDuration)
-	cellStatus.LockTimeTo = &toTime
-	if cellStatus.CellId == 0 {
-		cellStatus.CellId = lockReq.CellId
-		cellStatus.Branch = lockReq.Branch
-		// 没有添加过，版本就为0
-		cellStatus.LatestVersion = 0
-	}
-
-	_, err = c.cellStatusStore.Save(cellStatus)
-	if err != nil {
-		klog.Errorf("failed to save cell status, err:%v", err)
-		commentResult =
-			mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
-		ctx.JSON(http.StatusInternalServerError, commentResult)
-		return
-	}
-	customTimeFormat := "2006-01-02 15:04:05"
-
-	// add lock record in db
-	response := map[string]interface{}{
-		"id":           lockReq.CellId,
-		"latestVer":    cellStatus.LatestVersion,
-		"branch":       lockReq.Branch,
-		"lockKey":      lockReq.LockKey,
-		"lockTimeFrom": cellStatus.LockTimeFrom.Format(customTimeFormat),
-		"lockTimeTo":   cellStatus.LockTimeTo.Format(customTimeFormat),
-	}
-
-	commentResult = mydomain.CommentResult{Code: 0, Data: response, Msg: "success"}
-	ctx.JSON(http.StatusOK, response)
+	return
 }
 
 func getLockUnLockReq(ctx *gin.Context) (mydomain.LockReq, error) {
