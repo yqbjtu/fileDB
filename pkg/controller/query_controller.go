@@ -15,11 +15,11 @@ import (
 
 type QueryController struct {
 	// service or some to access DB method
-	cellHistoryService *service.CellHistoryService
+	cellHistoryService *service.CellCvsService
 	cellStatusStore    *store.CellStatusStore
 }
 
-func NewQueryController(cellHistoryService *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *QueryController {
+func NewQueryController(cellHistoryService *service.CellCvsService, cellStatusStore *store.CellStatusStore) *QueryController {
 	controller := QueryController{
 		cellHistoryService: cellHistoryService,
 		cellStatusStore:    cellStatusStore,

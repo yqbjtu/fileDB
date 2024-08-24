@@ -56,7 +56,7 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 
 		{
 			cvsGroupEngine := e.Group(baseEngine.BasePath() + "/cvs")
-			cvsGroupEngine.POST("/add", r.cvsController.CreateNewVersion)
+			cvsGroupEngine.POST("/add", r.cvsController.AddNewVersion)
 			cvsGroupEngine.POST("/lock", r.cvsController.Lock)
 			cvsGroupEngine.POST("/unlock", r.cvsController.UnLock)
 		}

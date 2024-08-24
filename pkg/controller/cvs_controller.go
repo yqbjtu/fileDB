@@ -8,7 +8,6 @@ import (
 	"fileDB/pkg/util"
 	"time"
 
-	"fileDB/pkg/domain"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
@@ -17,31 +16,35 @@ import (
 
 type CvsController struct {
 	// service or some to access DB method
-	globalConfig       *config.GlobalConfig
-	cellHistoryService *service.CellHistoryService
-	cellStatusStore    *store.CellStatusStore
+	globalConfig    *config.GlobalConfig
+	cellCvsSvc      *service.CellCvsService
+	cellHistorySvc  *service.CellHistoryService
+	cellStatusStore *store.CellStatusStore
 }
 
 func NewCvsController(globalConfig *config.GlobalConfig,
-	cellHistoryService *service.CellHistoryService,
+	cellCvsSvc *service.CellCvsService,
+	cellHistorySvc *service.CellHistoryService,
 	cellStatusStore *store.CellStatusStore) *CvsController {
 	controller := CvsController{
-		globalConfig:       globalConfig,
-		cellHistoryService: cellHistoryService,
-		cellStatusStore:    cellStatusStore,
+		globalConfig:    globalConfig,
+		cellCvsSvc:      cellCvsSvc,
+		cellHistorySvc:  cellHistorySvc,
+		cellStatusStore: cellStatusStore,
 	}
 	return &controller
 }
 
-// @Summary CreateNewVersion 提交一个新版本，
-// @Description download cell file by cellId, version and branch
+// AddNewVersion 提交一个新版本，
+// @Summary AddNewVersion 提交一个新版本，
+// @Description submit a new version of cell
 // @Tags query
 // @Accept  json
 // @Produce json
 // @Success 200 {object} mydomain.CommentResult "ok"
 // @Failure 400 {string} string "cellId,version and branch is required"
-// @Router /api/v1/cvs/add[post]
-func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
+// @Router /api/v1/cvs/add [post]
+func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 	var req mydomain.AddVersionReq
 	var err error
 
@@ -75,83 +78,14 @@ func (c *CvsController) CreateNewVersion(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.cellStatusStore.FindAll()
-	fmt.Println("result:", result)
-
-	cellStatus, err := c.cellStatusStore.Find(req.CellId, req.Branch)
+	commentResult, err := c.cellCvsSvc.AddNewVersion(req)
 	if err != nil {
-		klog.Errorf("failed to find cell status, err:%v", err)
-	}
-
-	// if cell not exist, create a new cell status
-	if cellStatus.CellId == 0 {
-		cellStatus.CellId = req.CellId
-		cellStatus.LatestVersion = req.Version
-		cellStatus.LockKey = ""
-		cellStatus.Branch = req.Branch
-		_, err = c.cellStatusStore.Save(cellStatus)
-		if err != nil {
-			klog.Errorf("failed to save cell status, err:%v", err)
-			commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", err)}
-			ctx.JSON(http.StatusOK, commentResult)
-			return
-		} else {
-			commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add the first version ok"}
-			ctx.JSON(http.StatusOK, commentResult)
-			return
-		}
-	}
-
-	// the req.Version should be the latest version + 1
-	expectedVersion := cellStatus.LatestVersion + 1
-	if req.Version != expectedVersion {
-		errMsg := fmt.Sprintf("cellId:%d, current latest version is %d, expectedVersion should be %d, not %d", req.CellId,
-			cellStatus.LatestVersion, expectedVersion, req.Version)
-		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
 		ctx.JSON(http.StatusBadRequest, commentResult)
 		return
-	}
-
-	// the cell should not be locked, or it is locked by req.LockKey
-	if cellStatus.LockKey != "" && cellStatus.LockKey != req.LockKey {
-		errMsg := fmt.Sprintf("cellId:%d is locked by %q, not %q", req.CellId, cellStatus.LockKey, req.LockKey)
-		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		ctx.JSON(http.StatusBadRequest, commentResult)
-		return
-	}
-
-	// update the cell status with latestVersion
-	cellStatus.LatestVersion = req.Version
-	cellStatus.LockKey = ""
-	_, err = c.cellStatusStore.Save(cellStatus)
-	if err != nil {
-		klog.Errorf("failed to save cell status, err:%v", err)
-		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
+	} else {
 		ctx.JSON(http.StatusOK, commentResult)
 		return
 	}
-	commentResult := mydomain.CommentResult{Code: 0, Data: req, Msg: "add new version ok"}
-
-	cellHistory := domain.CellHistory{
-		CellId:      req.CellId,
-		Branch:      req.Branch,
-		Version:     req.Version,
-		RequestType: "CheckinRequest",
-		LockKey:     req.LockKey,
-		Who:         "tester1",
-	}
-
-	c.cellHistoryService.Insert(cellHistory)
-	ctx.JSON(http.StatusOK, commentResult)
-}
-
-func (c *CvsController) GetOneUser(context *gin.Context) {
-	userId := context.Param("userId")
-	klog.Infof("get one user by id %q", userId)
-
-	context.JSON(http.StatusOK, gin.H{
-		"searchId": userId,
-	})
 }
 
 // @Summary lock the cell
