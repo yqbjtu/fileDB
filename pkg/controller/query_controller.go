@@ -15,14 +15,14 @@ import (
 
 type QueryController struct {
 	// service or some to access DB method
-	cellHistoryService *service.CellCvsService
-	cellStatusStore    *store.CellStatusStore
+	cellHistorySvc  *service.CellHistoryService
+	cellStatusStore *store.CellStatusStore
 }
 
-func NewQueryController(cellHistoryService *service.CellCvsService, cellStatusStore *store.CellStatusStore) *QueryController {
+func NewQueryController(cellHistorySvc *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *QueryController {
 	controller := QueryController{
-		cellHistoryService: cellHistoryService,
-		cellStatusStore:    cellStatusStore,
+		cellHistorySvc:  cellHistorySvc,
+		cellStatusStore: cellStatusStore,
 	}
 	return &controller
 }
@@ -136,10 +136,19 @@ func (c *QueryController) History(ctx *gin.Context) {
 		return
 	}
 
-	// query db to find the history
-	ctx.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": nil,
-		"msg":  fmt.Sprintf("cellId:%d, branch:%s", req.CellId, req.Branch),
-	})
+	var commentResult mydomain.CommentResult
+	historyList, err := c.cellHistorySvc.Find(req.CellId, req.Branch)
+	if err != nil {
+		commentResult =
+			mydomain.CommentResult{Code: -1, Data: nil,
+				Msg: fmt.Sprintf("fail to find history branch:%s, id:%d, err:%v", req.Branch, req.CellId, err)}
+		ctx.JSON(http.StatusInternalServerError, commentResult)
+	} else {
+		commentResult =
+			mydomain.CommentResult{Code: -1, Data: nil,
+				Msg: fmt.Sprintf("branch:%s, cellId:%d, size:%d", req.Branch, req.CellId, len(historyList))}
+		ctx.JSON(http.StatusOK, commentResult)
+	}
+
+	return
 }
