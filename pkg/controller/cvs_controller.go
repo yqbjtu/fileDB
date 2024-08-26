@@ -5,12 +5,12 @@ import (
 	"fileDB/pkg/common"
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/log"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"fileDB/pkg/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"k8s.io/klog"
 	"net/http"
 )
 
@@ -54,7 +54,7 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 	// lockKey can be empty when the cell is not locked by any key
 	req.LockKey = lockKeyStr
 
-	klog.Infof("add new file version, req:%v", req)
+	log.Infof("add new file version, req:%v", req)
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -72,7 +72,7 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 
 	// 将上传的文件存储到服务器上指定的位置
 	if err := ctx.SaveUploadedFile(header, savePath); err != nil {
-		klog.Errorf("failed to write file %q, err:%v", filename, err)
+		log.Errorf("failed to write file %q, err:%v", filename, err)
 		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
 		ctx.JSON(http.StatusOK, commentResult)
 		return
@@ -106,6 +106,7 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 		return
 	}
 
+	log.Infof("lock  cell %d, branch %s", lockReq.CellId, lockReq.Branch)
 	commentResult, err = c.cellCvsSvc.Lock(&lockReq)
 	if err != nil {
 		if errors.Is(err, common.ErrDBOperationFailure) {
@@ -131,7 +132,7 @@ func getLockUnLockReq(ctx *gin.Context) (mydomain.LockReq, error) {
 	}
 
 	if lockReq.Branch == "" {
-		klog.Errorf("branch can't be <= 0, req:%v", lockReq)
+		log.Errorf("branch can't be <= 0, req:%v", lockReq)
 		return lockReq, fmt.Errorf("branch can't be empty")
 	}
 
@@ -149,7 +150,7 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 
 	cellStatus, err := c.cellStatusStore.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
-		klog.Errorf("failed to find cell status, err:%v", err)
+		log.Errorf("failed to find cell status, err:%v", err)
 	}
 
 	// if the cell is not locked, return ok
@@ -175,7 +176,7 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	cellStatus.LockTimeTo = nil
 	_, err = c.cellStatusStore.Save(cellStatus)
 	if err != nil {
-		klog.Errorf("failed to save cell status, err:%v", err)
+		log.Errorf("failed to save cell status, err:%v", err)
 		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
 		ctx.JSON(http.StatusInternalServerError, commentResult)
 		return

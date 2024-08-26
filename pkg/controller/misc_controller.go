@@ -2,8 +2,8 @@ package controller
 
 import (
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/log"
 	"github.com/gin-gonic/gin"
-	"k8s.io/klog"
 	"net/http"
 	"runtime/debug"
 )
@@ -25,7 +25,7 @@ func (c *MiscController) FreeMemory(context *gin.Context) {
 }
 
 func (c *MiscController) BuildInfo(context *gin.Context) {
-	klog.Infof("build info")
+	log.Infof("build info")
 
 	commentResult := mydomain.CommentResult{Code: 0, Data: "v1.0", Msg: "ok"}
 	context.JSON(http.StatusOK, commentResult)

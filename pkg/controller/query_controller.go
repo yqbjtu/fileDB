@@ -3,12 +3,12 @@ package controller
 import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
+	"fileDB/pkg/log"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"fileDB/pkg/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"k8s.io/klog"
 	"net/http"
 	"os"
 )
@@ -53,7 +53,7 @@ func (c *QueryController) CellStatus(ctx *gin.Context) {
 	}
 
 	if cellStatus.CellId == 0 {
-		klog.Infof("cell not exist")
+		log.Infof("cell not exist")
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"code": 0,
 			"data": nil,
@@ -115,7 +115,7 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 }
 
 func (c *QueryController) FileBBoxInfo(ctx *gin.Context) {
-	klog.Infof("build info")
+	log.Infof("build info")
 	//H is a shortcut for map[string]interface{}
 
 	ctx.JSON(http.StatusOK, gin.H{
