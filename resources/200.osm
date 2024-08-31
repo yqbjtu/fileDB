@@ -1560,6 +1560,7 @@
   <nd ref="10789020203"/>
   <nd ref="10789020204"/>
   <nd ref="8968607253"/>
+  <tag k="LINE_TYPE" v="RoadCenter"/>
   <tag k="highway" v="footway"/>
  </way>
  <way id="1292495787" visible="true" version="1" changeset="152699045" timestamp="2024-06-14T21:12:34Z" user="Rngrk" uid="1723549">

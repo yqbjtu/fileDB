@@ -4224,6 +4224,7 @@
   <nd ref="8981784920"/>
   <tag k="highway" v="primary_link"/>
   <tag k="oneway" v="yes"/>
+  <tag k="LINE_TYPE" v="RoadCenter"/>
  </way>
  <way id="1041902643" visible="true" version="16" changeset="145350317" timestamp="2023-12-20T23:52:39Z" user="parrlem" uid="20034720">
   <nd ref="9591708571"/>
