@@ -38,32 +38,26 @@ func NewQueryController(cellHistorySvc *service.CellHistoryService, cellStatusSt
 func (c *QueryController) CellStatus(ctx *gin.Context) {
 	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": err.Error(),
-		})
+		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
 	cellStatus, err := c.cellStatusStore.Find(req.CellId, req.Branch)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"errMsg": err.Error(),
-		})
+		msg := fmt.Sprintf("fail to query db, err:%v", err)
+		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
 	if cellStatus.CellId == 0 {
 		log.Infof("cell not exist")
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"code": 0,
-			"data": nil,
-			"msg":  "cell not exist",
-		})
+		msg := fmt.Sprintf("cellId %d does not exist", req.CellId)
+		ctx.JSON(http.StatusNotFound, mydomain.NewSuccessRespWithMsg(nil, msg))
 		return
 	}
 
-	commentResult := mydomain.CommentResult{Code: 0, Data: cellStatus, Msg: "cell status done"}
-	ctx.JSON(http.StatusOK, commentResult)
+	ctx.JSON(http.StatusOK, mydomain.NewSuccessResp(cellStatus))
 }
 
 // @Summary download specific version cell file
@@ -80,9 +74,8 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 
 	req, err = util.GetCellBaseFromParameter(ctx, true)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": err.Error(),
-		})
+		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
@@ -95,15 +88,13 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	// 先检测该cellPath是否存在，如果不存在报错
 	// 如果目录不存在，则创建改目录
 	if _, err := os.Stat(cellPath); err != nil {
-		commentResult :=
-			mydomain.CommentResult{Code: -1, Data: nil,
-				Msg: fmt.Sprintf("fail to find file %s, err:%v", filename, err)}
+		msg := fmt.Sprintf("fail to find file %s, err:%v", filename, err)
 		if os.IsNotExist(err) {
-			ctx.JSON(http.StatusNotFound, commentResult)
+			ctx.JSON(http.StatusNotFound, mydomain.NewErrorRespWithMsg(-1, msg))
 			return
 		} else {
 			// 如果检查时发生其他错误，则返回错误信息
-			ctx.JSON(http.StatusInternalServerError, commentResult)
+			ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
 			return
 		}
 	}
@@ -130,24 +121,18 @@ func (c *QueryController) History(ctx *gin.Context) {
 	var req mydomain.CellBase
 	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"errMsg": err.Error(),
-		})
+		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
-	var commentResult mydomain.CommentResult
 	historyList, err := c.cellHistorySvc.Find(req.CellId, req.Branch)
 	if err != nil {
-		commentResult =
-			mydomain.CommentResult{Code: -1, Data: nil,
-				Msg: fmt.Sprintf("fail to find history branch:%s, id:%d, err:%v", req.Branch, req.CellId, err)}
-		ctx.JSON(http.StatusInternalServerError, commentResult)
+		msg := fmt.Sprintf("fail to find history branch:%s, id:%d, err:%v", req.Branch, req.CellId, err)
+		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
 	} else {
-		commentResult =
-			mydomain.CommentResult{Code: -1, Data: nil,
-				Msg: fmt.Sprintf("branch:%s, cellId:%d, size:%d", req.Branch, req.CellId, len(historyList))}
-		ctx.JSON(http.StatusOK, commentResult)
+		msg := fmt.Sprintf("branch:%s, cellId:%d, size:%d", req.Branch, req.CellId, len(historyList))
+		ctx.JSON(http.StatusOK, mydomain.NewErrorRespWithMsg(-1, msg))
 	}
 
 	return

@@ -57,9 +57,8 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 	log.Infof("add new file version, req:%v", req)
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": fmt.Sprintf("FormFile error: %s", err.Error()),
-		})
+		msg := fmt.Sprintf("FormFile error: %s", err.Error())
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 	defer file.Close()
@@ -73,8 +72,9 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 	// 将上传的文件存储到服务器上指定的位置
 	if err := ctx.SaveUploadedFile(header, savePath); err != nil {
 		log.Errorf("failed to write file %q, err:%v", filename, err)
-		commentResult := mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
-		ctx.JSON(http.StatusOK, commentResult)
+
+		msg := fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)
+		ctx.JSON(http.StatusOK, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
@@ -101,8 +101,8 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	var commentResult mydomain.CommentResult
 	lockReq, err := getLockUnLockReq(ctx)
 	if err != nil {
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
-		ctx.JSON(http.StatusBadRequest, commentResult)
+		msg := fmt.Sprintf("fail to parse http body, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
@@ -140,11 +140,10 @@ func getLockUnLockReq(ctx *gin.Context) (mydomain.LockReq, error) {
 }
 
 func (c *CvsController) UnLock(ctx *gin.Context) {
-	var commentResult mydomain.CommentResult
 	lockReq, err := getLockUnLockReq(ctx)
 	if err != nil {
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to parse http body, err:%v", err)}
-		ctx.JSON(http.StatusBadRequest, commentResult)
+		msg := fmt.Sprintf("fail to parse http body, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
@@ -155,18 +154,16 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 
 	// if the cell is not locked, return ok
 	if cellStatus.LockKey == "" {
-		msgStr := fmt.Sprintf("cell %d has not been locked", lockReq.CellId)
-		commentResult = mydomain.CommentResult{Code: 0, Data: nil, Msg: msgStr}
-		ctx.JSON(http.StatusOK, commentResult)
+		msg := fmt.Sprintf("cell %d has not been locked", lockReq.CellId)
+		ctx.JSON(http.StatusOK, mydomain.NewSuccessRespWithMsg(nil, msg))
 		return
 	}
 
 	if cellStatus.LockKey != lockReq.LockKey {
 		// if the cell is locked by other lockKey, return fail
-		msgStr := fmt.Sprintf("cell %d is locked by %s now, it can't be unlocked by %s",
+		msg := fmt.Sprintf("cell %d is locked by %s now, it can't be unlocked by %s",
 			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
-		ctx.JSON(http.StatusConflict, commentResult)
+		ctx.JSON(http.StatusConflict, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 	}
 
@@ -177,15 +174,14 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 	_, err = c.cellStatusStore.Save(cellStatus)
 	if err != nil {
 		log.Errorf("failed to save cell status, err:%v", err)
-		commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
-		ctx.JSON(http.StatusInternalServerError, commentResult)
+		msg := fmt.Sprintf("fail to save cell status lock info, err:%v", err)
+		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
 
 	}
 
-	msgStr := fmt.Sprintf("cell %d is unlocked by %s now, unlock done",
+	msg := fmt.Sprintf("cell %d is unlocked by %s now, unlock done",
 		lockReq.CellId, cellStatus.LockKey)
-	commentResult = mydomain.CommentResult{Code: -1, Data: nil, Msg: msgStr}
-	ctx.JSON(http.StatusOK, commentResult)
+	ctx.JSON(http.StatusOK, mydomain.NewSuccessRespWithMsg(nil, msg))
 	return
 }
