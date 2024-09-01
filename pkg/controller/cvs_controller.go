@@ -41,7 +41,7 @@ func NewCvsController(globalConfig *config.GlobalConfig,
 // @Tags query
 // @Accept  json
 // @Produce json
-// @Success 200 {object} mydomain.CommentResult "ok"
+// @Success 200 {object} mydomain.CommonResult "ok"
 // @Failure 400 {string} string "cellId,version and branch is required"
 // @Router /api/v1/cvs/add [post]
 func (c *CvsController) AddNewVersion(ctx *gin.Context) {
@@ -78,12 +78,12 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 		return
 	}
 
-	commentResult, err := c.cellCvsSvc.AddNewVersion(req)
+	CommonResult, err := c.cellCvsSvc.AddNewVersion(req)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, commentResult)
+		ctx.JSON(http.StatusBadRequest, CommonResult)
 		return
 	} else {
-		ctx.JSON(http.StatusOK, commentResult)
+		ctx.JSON(http.StatusOK, CommonResult)
 		return
 	}
 }
@@ -98,7 +98,7 @@ func (c *CvsController) AddNewVersion(ctx *gin.Context) {
 // @Router /api/v1/csv/lock [post]
 func (c *CvsController) Lock(ctx *gin.Context) {
 	// 从body中解析出cellId, plus1Ver, , branch
-	var commentResult mydomain.CommentResult
+	var CommonResult mydomain.CommonResult
 	lockReq, err := getLockUnLockReq(ctx)
 	if err != nil {
 		msg := fmt.Sprintf("fail to parse http body, err:%v", err)
@@ -107,16 +107,16 @@ func (c *CvsController) Lock(ctx *gin.Context) {
 	}
 
 	log.Infof("lock  cell %d, branch %s", lockReq.CellId, lockReq.Branch)
-	commentResult, err = c.cellCvsSvc.Lock(&lockReq)
+	CommonResult, err = c.cellCvsSvc.Lock(&lockReq)
 	if err != nil {
 		if errors.Is(err, common.ErrDBOperationFailure) {
-			ctx.JSON(http.StatusInternalServerError, commentResult)
+			ctx.JSON(http.StatusInternalServerError, CommonResult)
 		} else {
-			ctx.JSON(http.StatusBadRequest, commentResult)
+			ctx.JSON(http.StatusBadRequest, CommonResult)
 		}
 
 	} else {
-		ctx.JSON(http.StatusOK, commentResult)
+		ctx.JSON(http.StatusOK, CommonResult)
 	}
 	return
 }

@@ -4,8 +4,8 @@ import (
 	"fileDB/pkg/common"
 	"fileDB/pkg/config"
 	"fileDB/pkg/domain"
+	"fileDB/pkg/log"
 	"fmt"
-	"k8s.io/klog"
 	"time"
 )
 
@@ -29,10 +29,10 @@ func NewCellCvsService(
 	}
 }
 
-func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.CommentResult, error) {
+func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.CommonResult, error) {
 	cellStatus, err := s.cellStatusSvc.Find(req.CellId, req.Branch)
 	if err != nil {
-		klog.Errorf("failed to find cell status, err:%v", err)
+		log.Errorf("failed to find cell status, err:%v", err)
 	}
 
 	// if cell not exist, create a new cell status
@@ -43,12 +43,12 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.Comment
 		cellStatus.Branch = req.Branch
 		_, err = s.cellStatusSvc.Insert(cellStatus)
 		if err != nil {
-			klog.Errorf("failed to save cell status, err:%v", err)
-			commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", err)}
-			return commentResult, nil
+			log.Errorf("failed to save cell status, err:%v", err)
+			CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to  save cell status, err:%v", err)}
+			return CommonResult, nil
 		} else {
-			commentResult := domain.CommentResult{Code: 0, Data: req, Msg: "add the first version ok"}
-			return commentResult, nil
+			CommonResult := domain.CommonResult{Code: 0, Data: req, Msg: "add the first version ok"}
+			return CommonResult, nil
 		}
 	}
 
@@ -57,15 +57,15 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.Comment
 	if req.Version != expectedVersion {
 		errMsg := fmt.Sprintf("cellId:%d, current latest version is %d, expectedVersion should be %d, not %d", req.CellId,
 			cellStatus.LatestVersion, expectedVersion, req.Version)
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		return commentResult, fmt.Errorf(errMsg)
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: errMsg}
+		return CommonResult, fmt.Errorf(errMsg)
 	}
 
 	// the cell should not be locked, or it is locked by req.LockKey
 	if cellStatus.LockKey != "" && cellStatus.LockKey != req.LockKey {
 		errMsg := fmt.Sprintf("cellId:%d is locked by %q, not %q", req.CellId, cellStatus.LockKey, req.LockKey)
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		return commentResult, fmt.Errorf(errMsg)
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: errMsg}
+		return CommonResult, fmt.Errorf(errMsg)
 	}
 
 	// update the cell status with latestVersion
@@ -73,9 +73,9 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.Comment
 	cellStatus.LockKey = ""
 	_, err = s.cellStatusSvc.Insert(cellStatus)
 	if err != nil {
-		klog.Errorf("failed to save cell status, err:%v", err)
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
-		return commentResult, nil
+		log.Errorf("failed to save cell status, err:%v", err)
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
+		return CommonResult, nil
 	}
 
 	cellHistory := domain.CellHistory{
@@ -89,30 +89,30 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.Comment
 
 	err = s.cellHistorySvc.Insert(cellHistory)
 	if err != nil {
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveHistoryRecord, err:%v", err)}
-		return commentResult, nil
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveHistoryRecord, err:%v", err)}
+		return CommonResult, nil
 	}
 
-	commentResult := domain.CommentResult{Code: 0, Data: nil, Msg: fmt.Sprintf("cell %d add new version done", req.CellId)}
-	return commentResult, nil
+	CommonResult := domain.CommonResult{Code: 0, Data: nil, Msg: fmt.Sprintf("cell %d add new version done", req.CellId)}
+	return CommonResult, nil
 }
 
-func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommentResult, error) {
+func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommonResult, error) {
 	cellStatus, err := s.cellStatusSvc.Find(lockReq.CellId, lockReq.Branch)
 	if err != nil {
-		klog.Errorf("failed to find cell status, err:%v", err)
+		log.Errorf("failed to find cell status, err:%v", err)
 	}
 
 	if cellStatus.LockKey != "" && cellStatus.LockKey != lockReq.LockKey {
 		errMsg := fmt.Sprintf("cell %d has already been locked by %s now, so it can't be locked by %s again",
 			lockReq.CellId, cellStatus.LockKey, lockReq.LockKey)
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		return commentResult, fmt.Errorf(errMsg)
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: errMsg}
+		return CommonResult, fmt.Errorf(errMsg)
 	}
 	if lockReq.LockDuration.GetSeconds() <= 10 {
 		errMsg := fmt.Sprintf("cell lock duration should be gt 10s, but it is %v", lockReq.LockDuration)
-		commentResult := domain.CommentResult{Code: -1, Data: nil, Msg: errMsg}
-		return commentResult, fmt.Errorf(errMsg)
+		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: errMsg}
+		return CommonResult, fmt.Errorf(errMsg)
 	}
 
 	cellStatus.LockKey = lockReq.LockKey
@@ -133,10 +133,26 @@ func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommentResult, er
 
 	_, err = s.cellStatusSvc.Insert(cellStatus)
 	if err != nil {
-		klog.Errorf("failed to save cell status, err:%v", err)
-		commentResult :=
-			domain.CommentResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
-		return commentResult, common.ErrDBOperationFailure
+		log.Errorf("failed to save cell status, err:%v", err)
+		CommonResult :=
+			domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
+		return CommonResult, common.ErrDBOperationFailure
+	}
+
+	// insert a event to cell_compile_queue
+	cellCompileQueue := domain.CellCompileQueue{
+		CellId:   lockReq.CellId,
+		Branch:   lockReq.Branch,
+		Version:  cellStatus.LatestVersion,
+		Priority: 0,
+	}
+
+	err = s.cellCompileQueueSvc.Insert(cellCompileQueue)
+	if err != nil {
+		log.Errorf("failed to save cell compile queue, err:%v", err)
+		CommonResult :=
+			domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
+		return CommonResult, common.ErrDBOperationFailure
 	}
 
 	customTimeFormat := "2006-01-02 15:04:05"
@@ -150,11 +166,10 @@ func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommentResult, er
 		"lockTimeTo":   cellStatus.LockTimeTo.Format(customTimeFormat),
 	}
 
-	commentResult := domain.CommentResult{Code: 0, Data: response, Msg: "success"}
-	return commentResult, nil
+	return *domain.NewSuccessResp(response), nil
 }
 
-func (s *CellCvsService) UnLock(req domain.AddVersionReq) (domain.CommentResult, error) {
+func (s *CellCvsService) UnLock(req domain.AddVersionReq) (domain.CommonResult, error) {
 
-	return domain.CommentResult{}, nil
+	return domain.CommonResult{}, nil
 }

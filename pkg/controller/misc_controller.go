@@ -20,13 +20,13 @@ func NewMiscController() *MiscController {
 func (c *MiscController) FreeMemory(context *gin.Context) {
 	debug.FreeOSMemory()
 
-	commentResult := mydomain.CommentResult{Code: 0, Data: nil, Msg: "free mem ok"}
-	context.JSON(http.StatusOK, commentResult)
+	CommonResult := mydomain.CommonResult{Code: 0, Data: nil, Msg: "free mem ok"}
+	context.JSON(http.StatusOK, CommonResult)
 }
 
 func (c *MiscController) BuildInfo(context *gin.Context) {
 	log.Infof("build info")
 
-	commentResult := mydomain.CommentResult{Code: 0, Data: "v1.0", Msg: "ok"}
-	context.JSON(http.StatusOK, commentResult)
+	CommonResult := mydomain.CommonResult{Code: 0, Data: "v1.0", Msg: "ok"}
+	context.JSON(http.StatusOK, CommonResult)
 }

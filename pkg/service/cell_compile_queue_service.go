@@ -22,8 +22,8 @@ func (s *CellCompileQueueService) Find(cellId int64, branch string) ([]domain.Ce
 	return cellHistoryList, nil
 }
 
-func (s *CellCompileQueueService) Insert(history domain.CellCompileQueue) error {
-	_, err := s.bizStore.Insert(history)
+func (s *CellCompileQueueService) Insert(cellCompileQueue domain.CellCompileQueue) error {
+	_, err := s.bizStore.Upsert(cellCompileQueue)
 	if err != nil {
 		return err
 	}

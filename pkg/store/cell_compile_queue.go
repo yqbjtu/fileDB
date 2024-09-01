@@ -2,9 +2,9 @@ package store
 
 import (
 	"fileDB/pkg/domain"
+	"fileDB/pkg/log"
 	"fmt"
 	"gorm.io/gorm"
-	"k8s.io/klog"
 )
 
 type CellCompileQueueStore struct {
@@ -27,8 +27,8 @@ func (s *CellCompileQueueStore) Find(cellId int64, branch string) (domain.CellCo
 	return objResult, nil
 }
 
-// Insert if the cellId+branch already exists, update the record, otherwise insert a new record
-func (s *CellCompileQueueStore) Insert(obj domain.CellCompileQueue) (*domain.CellCompileQueue, error) {
+// Upsert if the cellId+branch already exists, update the record, otherwise insert a new record
+func (s *CellCompileQueueStore) Upsert(obj domain.CellCompileQueue) (*domain.CellCompileQueue, error) {
 
 	// find the record by branch cellId , if it exists, update the record, otherwise insert a new record
 	var objResult domain.CellCompileQueue
@@ -41,7 +41,7 @@ func (s *CellCompileQueueStore) Insert(obj domain.CellCompileQueue) (*domain.Cel
 		// update the record
 		result := s.db.Model(&objResult).Updates(&obj)
 		if result.Error != nil {
-			klog.Errorf("failed to update cell compile queue, err:%v", result.Error)
+			log.Errorf("failed to update cell compile queue, err:%v", result.Error)
 			return nil, fmt.Errorf("fail to cell compile queue, err:%v", result.Error)
 		}
 
@@ -51,7 +51,7 @@ func (s *CellCompileQueueStore) Insert(obj domain.CellCompileQueue) (*domain.Cel
 	// insert a new record
 	result = s.db.Save(&obj)
 	if result.Error != nil {
-		klog.Errorf("failed to insert cell compile queue, err:%v", result.Error)
+		log.Errorf("failed to insert cell compile queue, err:%v", result.Error)
 		return nil, fmt.Errorf("fail to cell compile queue, err:%v", result.Error)
 	}
 
