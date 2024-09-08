@@ -50,28 +50,6 @@ func (s *CellGisMetaService) UpsertGisMeta(req domain.CellGisMeta) (domain.Commo
 		}
 	}
 
-	_, err = s.cellStatusSvc.Find(cellStatus)
-	if err != nil {
-		log.Errorf("failed to save cell status, err:%v", err)
-		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveUploadedFile, err:%v", err)}
-		return CommonResult, nil
-	}
-
-	cellHistory := domain.CellHistory{
-		CellId:      req.CellId,
-		Branch:      req.Branch,
-		Version:     req.Version,
-		RequestType: "CheckinRequest",
-		LockKey:     req.LockKey,
-		Who:         "tester1",
-	}
-
-	err = s.cellHistorySvc.Insert(cellHistory)
-	if err != nil {
-		CommonResult := domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to SaveHistoryRecord, err:%v", err)}
-		return CommonResult, nil
-	}
-
 	CommonResult := domain.CommonResult{Code: 0, Data: nil, Msg: fmt.Sprintf("cell %d add new version done", req.CellId)}
 	return CommonResult, nil
 }

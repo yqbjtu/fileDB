@@ -6,6 +6,7 @@ import (
 	"fileDB/pkg/controller"
 	"fileDB/pkg/log"
 	myrouter "fileDB/pkg/router"
+	"fileDB/pkg/schedule"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
 	"flag"
@@ -83,6 +84,7 @@ func main() {
 		service.Module,
 		controller.Module,
 		myrouter.Module,
+		schedule.Module,
 		fx.Invoke(ServiceLifetimeHooks),
 	)
 
@@ -95,6 +97,8 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+
+	// how to get the service instance , then pass cellCompileQueueSvc service.CellCompileQueueService to schedule.ProcessCompile
 
 	<-shutdowner
 
