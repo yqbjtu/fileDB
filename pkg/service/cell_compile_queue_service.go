@@ -17,9 +17,9 @@ func NewCellCompileQueueService(bizStore *store.CellCompileQueueStore) *CellComp
 
 func (s *CellCompileQueueService) Find(cellId int64, branch string) ([]domain.CellCompileQueue, error) {
 
-	var cellHistoryList []domain.CellCompileQueue
+	var cellInQueueList []domain.CellCompileQueue
 
-	return cellHistoryList, nil
+	return cellInQueueList, nil
 }
 
 func (s *CellCompileQueueService) Insert(cellCompileQueue domain.CellCompileQueue) error {
