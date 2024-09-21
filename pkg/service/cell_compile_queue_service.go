@@ -22,7 +22,8 @@ func (s *CellCompileQueueService) Find(cellId int64, branch string) ([]domain.Ce
 	return cellInQueueList, nil
 }
 
-func (s *CellCompileQueueService) Insert(cellCompileQueue domain.CellCompileQueue) error {
+// Upsert 每个branch+cellId在队列中只有一个元素， 如有新的版本产生，会覆盖之前的版本
+func (s *CellCompileQueueService) Upsert(cellCompileQueue domain.CellCompileQueue) error {
 	_, err := s.bizStore.Upsert(cellCompileQueue)
 	if err != nil {
 		return err
