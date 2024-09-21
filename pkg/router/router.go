@@ -12,17 +12,20 @@ type Router struct {
 	cvsController   *mycontroller.CvsController
 	miscController  *mycontroller.MiscController
 	queryController *mycontroller.QueryController
+	adminController *mycontroller.AdminController
 }
 
 // NewRouter Generator
 func NewRouter(
 	cvsController *mycontroller.CvsController,
 	miscController *mycontroller.MiscController,
-	queryController *mycontroller.QueryController) *Router {
+	queryController *mycontroller.QueryController,
+	adminController *mycontroller.AdminController) *Router {
 	return &Router{
 		cvsController:   cvsController,
 		miscController:  miscController,
 		queryController: queryController,
+		adminController: adminController,
 	}
 }
 
@@ -70,6 +73,11 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 			queryGroupEngine.GET("/download", r.queryController.DownloadFile)
 			queryGroupEngine.GET("/history", r.queryController.History)
 			queryGroupEngine.GET("/status", r.queryController.CellStatus)
+		}
+		{
+			adminGroupEngine := e.Group(baseEngine.BasePath() + "/admin")
+			adminGroupEngine.GET("/compileQueueSize", r.adminController.FindAllWaitingToCompileQueue)
+			adminGroupEngine.GET("/compileQueueSizeByBranch", r.adminController.FindAllWaitingToCompileQueueByBranch)
 		}
 	}
 

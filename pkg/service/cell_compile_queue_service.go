@@ -30,3 +30,13 @@ func (s *CellCompileQueueService) Insert(cellCompileQueue domain.CellCompileQueu
 
 	return nil
 }
+
+// WaitingToCompileQueueSize 查询等待编译的总队列长度
+func (s *CellCompileQueueService) WaitingToCompileQueueSize() int64 {
+	return s.bizStore.FindAllSize()
+}
+
+// WaitingToCompileQueueSizeByBranch 按照branch查询等待编译的队列长度
+func (s *CellCompileQueueService) WaitingToCompileQueueSizeByBranch(branch string) int64 {
+	return s.bizStore.FindAllByBranch(branch)
+}

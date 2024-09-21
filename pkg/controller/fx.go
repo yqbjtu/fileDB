@@ -7,4 +7,5 @@ var Module = fx.Options(
 	fx.Provide(NewCvsController),
 	fx.Provide(NewMiscController),
 	fx.Provide(NewQueryController),
+	fx.Provide(NewAdminController),
 )

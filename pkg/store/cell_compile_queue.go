@@ -27,6 +27,28 @@ func (s *CellCompileQueueStore) Find(cellId int64, branch string) (domain.CellCo
 	return objResult, nil
 }
 
+func (s *CellCompileQueueStore) Delete(cellId, version int64, branch string) (domain.CellCompileQueue, error) {
+	var objResult domain.CellCompileQueue
+	result := s.db.Delete(&objResult, "cell_id = ? and version =? and branch = ?", cellId, version, branch)
+	if result.Error != nil {
+		return objResult, fmt.Errorf("delete specific CellCompileQueue failed, err:%v", result.Error)
+	}
+
+	return objResult, nil
+}
+
+func (s *CellCompileQueueStore) FindAllSize() int64 {
+	var count int64
+	s.db.Model(&domain.CellCompileQueue{}).Count(&count)
+	return count
+}
+
+func (s *CellCompileQueueStore) FindAllByBranch(branch string) int64 {
+	var count int64
+	s.db.Model(&domain.CellCompileQueue{}).Where("branch = ?", branch).Count(&count)
+	return count
+}
+
 // Upsert if the cellId+branch already exists, update the record, otherwise insert a new record
 func (s *CellCompileQueueStore) Upsert(obj domain.CellCompileQueue) (*domain.CellCompileQueue, error) {
 
