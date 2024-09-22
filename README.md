@@ -36,13 +36,13 @@ curl -X POST -F "file=@/Users/ericyang/Downloads/20007114.osm" \
 # download a cell version
 
 ```shell
-curl --location --request GET 'http://localhost:8090/api/v1/query/download?cellId=20007114&version=1&namespace=main'
+curl --location --request GET 'http://localhost:8090/api/v1/query/download?cellId=20007114&version=1&branch=main'
 
 ```
 
 # lock a cell
 
-```json
+```shell
 curl --location --request POST 'http://localhost:8090/api/v1/cvs/lock' \
 --data-raw '{
     "cellId" :20007114,
@@ -56,7 +56,7 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/lock' \
 
 # unlock a cell
 
-```json
+```shell
 curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
 --data-raw '{
     "cellId" :20007114,
@@ -67,10 +67,22 @@ curl --location --request POST 'http://localhost:8090/api/v1/cvs/unlock' \
 
 # find cell status
 
-```json
+```shell
 
 curl --location --request GET 'http://localhost:8090/api/v1/query/status?cellId=20007114&version=1&branch=main'
 ```
+
+# find waiting to compile queue
+
+```shell
+  query all waiting to compile queue
+  curl --location --request GET 'http://localhost:8090/api/v1/admin/compileQueueSize'
+
+  query waiting to compile queue by branch
+  curl --location --request GET 'http://localhost:8090/api/v1/admin/compileQueueSizeByBranch?branch=main'
+```
+
+
 # swagger
 
 http://localhost:8090/swagger/index.html

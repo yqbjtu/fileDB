@@ -47,6 +47,12 @@ func (c *AdminController) FindAllWaitingToCompileQueue(ctx *gin.Context) {
 
 func (c *AdminController) FindAllWaitingToCompileQueueByBranch(ctx *gin.Context) {
 	branchStr := ctx.Query("branch")
+	if branchStr == "" {
+		commonRes := mydomain.CommonResult{Code: -1, Data: nil, Msg: "branch is required, but it is empty"}
+		ctx.JSON(http.StatusBadRequest, commonRes)
+		return
+	}
+
 	count := c.cellCompileQueueSvc.WaitingToCompileQueueSizeByBranch(branchStr)
 	msg := fmt.Sprintf("branch '%s' has %d cell to compile", branchStr, count)
 	CommonResult := mydomain.CommonResult{Code: 0, Data: count, Msg: msg}
