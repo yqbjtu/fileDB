@@ -58,3 +58,15 @@ func (s *CellGisMetaService) UnLock(req domain.AddVersionReq) (domain.CommonResu
 
 	return domain.CommonResult{}, nil
 }
+
+func (s *CellGisMetaService) BBoxInfo(branch string, cellId int64) domain.CommonResult {
+	cellMeta, err := s.bizStore.Find(cellId, branch)
+	if err != nil {
+		msg := fmt.Sprintf("failed to find cell meta, err:%v", err)
+		commonRes := domain.CommonResult{Code: -1, Data: nil, Msg: msg}
+		return commonRes
+	}
+
+	commonRes := domain.CommonResult{Code: -1, Data: cellMeta, Msg: "done"}
+	return commonRes
+}

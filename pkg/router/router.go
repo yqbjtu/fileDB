@@ -73,6 +73,7 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 			queryGroupEngine.GET("/download", r.queryController.DownloadFile)
 			queryGroupEngine.GET("/history", r.queryController.History)
 			queryGroupEngine.GET("/status", r.queryController.CellStatus)
+			queryGroupEngine.GET("/bboxInfo", r.queryController.BBoxInfo)
 		}
 		{
 			adminGroupEngine := e.Group(baseEngine.BasePath() + "/admin")

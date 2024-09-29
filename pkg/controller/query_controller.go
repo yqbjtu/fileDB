@@ -17,12 +17,16 @@ type QueryController struct {
 	// service or some to access DB method
 	cellHistorySvc  *service.CellHistoryService
 	cellStatusStore *store.CellStatusStore
+	cellGisMetaSvc  *service.CellGisMetaService
 }
 
-func NewQueryController(cellHistorySvc *service.CellHistoryService, cellStatusStore *store.CellStatusStore) *QueryController {
+func NewQueryController(cellHistorySvc *service.CellHistoryService,
+	cellStatusStore *store.CellStatusStore,
+	cellGisMetaSvc *service.CellGisMetaService) *QueryController {
 	controller := QueryController{
 		cellHistorySvc:  cellHistorySvc,
 		cellStatusStore: cellStatusStore,
+		cellGisMetaSvc:  cellGisMetaSvc,
 	}
 	return &controller
 }
@@ -105,15 +109,17 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	ctx.File(cellPath)
 }
 
-func (c *QueryController) FileBBoxInfo(ctx *gin.Context) {
-	log.Infof("build info")
-	//H is a shortcut for map[string]interface{}
+func (c *QueryController) BBoxInfo(ctx *gin.Context) {
+	req, err := util.GetCellBaseFromParameter(ctx, false)
+	if err != nil {
+		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
+		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
+		return
+	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": nil,
-		"msg":  "ok",
-	})
+	commonRes := c.cellGisMetaSvc.BBoxInfo(req.Branch, req.CellId)
+	ctx.JSON(http.StatusOK, commonRes)
+	return
 }
 
 // History query the cell history , such as addVersion, lock,. unlock, etc
