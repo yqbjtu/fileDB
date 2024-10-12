@@ -15,11 +15,13 @@ func NewCellCompileQueueService(bizStore *store.CellCompileQueueStore) *CellComp
 	}
 }
 
-func (s *CellCompileQueueService) Find(cellId int64, branch string) ([]domain.CellCompileQueue, error) {
-
-	var cellInQueueList []domain.CellCompileQueue
-
-	return cellInQueueList, nil
+func (s *CellCompileQueueService) Find(cellId int64, branch string) (domain.CellCompileQueue, error) {
+	var cellInQueue domain.CellCompileQueue
+	cellInQueue, err := s.bizStore.Find(cellId, branch)
+	if err != nil {
+		return cellInQueue, err
+	}
+	return cellInQueue, nil
 }
 
 // Upsert 每个branch+cellId在队列中只有一个元素， 如有新的版本产生，会覆盖之前的版本
