@@ -13,20 +13,20 @@ import (
 	"os"
 )
 
-type QueryController struct {
+type CompileQueueController struct {
 	// service or some to access DB method
-	cellHistorySvc          *service.CellHistoryService
-	cellStatusStore         *store.CellStatusStore
-	CellCompileQueueService *service.CellGisMetaService
+	cellHistorySvc      *service.CellHistoryService
+	cellStatusStore     *store.CellStatusStore
+	cellCompileQueueSvc *service.CellCompileQueueService
 }
 
-func NewQueryController(cellHistorySvc *service.CellHistoryService,
+func NewCompileQueueController(cellHistorySvc *service.CellHistoryService,
 	cellStatusStore *store.CellStatusStore,
-	cellGisMetaSvc *service.CellGisMetaService) *QueryController {
-	controller := QueryController{
-		cellHistorySvc:  cellHistorySvc,
-		cellStatusStore: cellStatusStore,
-		cellGisMetaSvc:  cellGisMetaSvc,
+	cellCompileQueueSvc *service.CellCompileQueueService) *CompileQueueController {
+	controller := CompileQueueController{
+		cellHistorySvc:      cellHistorySvc,
+		cellStatusStore:     cellStatusStore,
+		cellCompileQueueSvc: cellCompileQueueSvc,
 	}
 	return &controller
 }
@@ -39,7 +39,7 @@ func NewQueryController(cellHistorySvc *service.CellHistoryService,
 // @Success 200 {string} string	"ok"
 // @Failure 400 {string} string "We need cellId and branch"
 // @Router /api/v1/cellversion/status [get]
-func (c *QueryController) CellStatus(ctx *gin.Context) {
+func (c *CompileQueueController) CellStatus(ctx *gin.Context) {
 	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
 		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
@@ -72,7 +72,7 @@ func (c *QueryController) CellStatus(ctx *gin.Context) {
 // @Success 200 {string} string	"ok"
 // @Failure 400 {string} string "We need cellId,version and branch"
 // @Router /example/download [get]
-func (c *QueryController) DownloadFile(ctx *gin.Context) {
+func (c *CompileQueueController) DownloadFile(ctx *gin.Context) {
 	var req mydomain.CellBase
 	var err error
 
@@ -109,7 +109,7 @@ func (c *QueryController) DownloadFile(ctx *gin.Context) {
 	ctx.File(cellPath)
 }
 
-func (c *QueryController) BBoxInfo(ctx *gin.Context) {
+func (c *CompileQueueController) BBoxInfo(ctx *gin.Context) {
 	req, err := util.GetCellBaseFromParameter(ctx, false)
 	if err != nil {
 		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
@@ -119,27 +119,5 @@ func (c *QueryController) BBoxInfo(ctx *gin.Context) {
 
 	commonRes := c.cellGisMetaSvc.BBoxInfo(req.Branch, req.CellId)
 	ctx.JSON(http.StatusOK, commonRes)
-	return
-}
-
-// History query the cell history , such as addVersion, lock,. unlock, etc
-func (c *QueryController) History(ctx *gin.Context) {
-	var req mydomain.CellBase
-	req, err := util.GetCellBaseFromParameter(ctx, false)
-	if err != nil {
-		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
-		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
-		return
-	}
-
-	historyList, err := c.cellHistorySvc.Find(req.CellId, req.Branch)
-	if err != nil {
-		msg := fmt.Sprintf("fail to find history branch:%s, id:%d, err:%v", req.Branch, req.CellId, err)
-		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
-	} else {
-		msg := fmt.Sprintf("branch:%s, cellId:%d, size:%d", req.Branch, req.CellId, len(historyList))
-		ctx.JSON(http.StatusOK, mydomain.NewErrorRespWithMsg(-1, msg))
-	}
-
 	return
 }
