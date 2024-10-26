@@ -9,10 +9,11 @@ import (
 
 // Router router
 type Router struct {
-	cvsController   *mycontroller.CvsController
-	miscController  *mycontroller.MiscController
-	queryController *mycontroller.QueryController
-	adminController *mycontroller.AdminController
+	cvsController          *mycontroller.CvsController
+	miscController         *mycontroller.MiscController
+	queryController        *mycontroller.QueryController
+	adminController        *mycontroller.AdminController
+	compileQueueController *mycontroller.CompileQueueController
 }
 
 // NewRouter Generator
@@ -20,12 +21,14 @@ func NewRouter(
 	cvsController *mycontroller.CvsController,
 	miscController *mycontroller.MiscController,
 	queryController *mycontroller.QueryController,
-	adminController *mycontroller.AdminController) *Router {
+	adminController *mycontroller.AdminController,
+	compileQueueController *mycontroller.CompileQueueController) *Router {
 	return &Router{
-		cvsController:   cvsController,
-		miscController:  miscController,
-		queryController: queryController,
-		adminController: adminController,
+		cvsController:          cvsController,
+		miscController:         miscController,
+		queryController:        queryController,
+		adminController:        adminController,
+		compileQueueController: compileQueueController,
 	}
 }
 
@@ -77,8 +80,12 @@ func (r *Router) Server(middlewares ...gin.HandlerFunc) *gin.Engine {
 		}
 		{
 			adminGroupEngine := e.Group(baseEngine.BasePath() + "/admin")
-			adminGroupEngine.GET("/compileQueueSize", r.adminController.FindAllWaitingToCompileQueue)
-			adminGroupEngine.GET("/compileQueueSizeByBranch", r.adminController.FindAllWaitingToCompileQueueByBranch)
+			adminGroupEngine.GET("/backup", r.adminController.Backup)
+		}
+		{
+			adminGroupEngine := e.Group(baseEngine.BasePath() + "/compile")
+			adminGroupEngine.GET("/compileQueueSize", r.compileQueueController.WaitingToCompileQueueSize)
+			adminGroupEngine.GET("/compileQueueSizeByBranch", r.compileQueueController.WaitingToCompileQueueSizeByBranch)
 		}
 	}
 

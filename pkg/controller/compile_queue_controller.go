@@ -1,16 +1,13 @@
 package controller
 
 import (
-	"fileDB/pkg/config"
-	mydomain "fileDB/pkg/domain"
-	"fileDB/pkg/log"
+	"fileDB/pkg/domain"
 	"fileDB/pkg/service"
 	"fileDB/pkg/store"
-	"fileDB/pkg/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"k8s.io/klog"
 	"net/http"
-	"os"
 )
 
 type CompileQueueController struct {
@@ -31,93 +28,38 @@ func NewCompileQueueController(cellHistorySvc *service.CellHistoryService,
 	return &controller
 }
 
-// @Summary query cell status
-// @Description check cell exist or not, cell is checkout or not etc
+// WaitingToCompileQueueSize @Summary get  queue size of cell to be compiled
+func (c *CompileQueueController) WaitingToCompileQueueSize(ctx *gin.Context) {
+	size := c.cellCompileQueueSvc.WaitingToCompileQueueSize()
+
+	commonRes :=
+		domain.CommonResult{Code: 1, Data: size, Msg: "total queue size to be compiled for all branches"}
+
+	ctx.JSON(http.StatusOK, commonRes)
+	return
+}
+
+// FindAllWaitingToCompileQueue 查询总的等待编编译的队列长度
+// @Summary FindAllWaitingToCompileQueue 查询总的等待编编译的队列长度
+// @Description query all waiting to compile queue
 // @Tags query
 // @Accept  json
 // @Produce json
-// @Success 200 {string} string	"ok"
-// @Failure 400 {string} string "We need cellId and branch"
-// @Router /api/v1/cellversion/status [get]
-func (c *CompileQueueController) CellStatus(ctx *gin.Context) {
-	req, err := util.GetCellBaseFromParameter(ctx, false)
-	if err != nil {
-		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
-		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
-		return
+// @Success 200 {object} mydomain.CommonResult "ok"
+// @Router /api/v1/admin/compileQueueSize [get]
+func (c *CompileQueueController) WaitingToCompileQueueSizeByBranch(ctx *gin.Context) {
+	branchStr := ctx.Query("branch")
+	if branchStr == "" {
+		klog.Errorf("branch '%s' can't be empty", branchStr)
+		msg := fmt.Sprintf("query paramenter branch can't be empty")
+		ctx.JSON(http.StatusBadRequest, domain.NewErrorRespWithMsg(-1, msg))
 	}
 
-	cellStatus, err := c.cellStatusStore.Find(req.CellId, req.Branch)
-	if err != nil {
-		msg := fmt.Sprintf("fail to query db, err:%v", err)
-		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
-		return
-	}
+	size := c.cellCompileQueueSvc.WaitingToCompileQueueSizeByBranch(branchStr)
+	msg := fmt.Sprintf("branch '%s' has %d cell to compile", branchStr, size)
+	commonRes :=
+		domain.CommonResult{Code: 1, Data: size, Msg: msg}
 
-	if cellStatus.CellId == 0 {
-		log.Infof("cell not exist")
-		msg := fmt.Sprintf("cellId %d does not exist", req.CellId)
-		ctx.JSON(http.StatusNotFound, mydomain.NewSuccessRespWithMsg(nil, msg))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, mydomain.NewSuccessResp(cellStatus))
-}
-
-// @Summary download specific version cell file
-// @Description download cell file by cellId, version and branch
-// @Tags query
-// @Accept  json
-// @Produce json
-// @Success 200 {string} string	"ok"
-// @Failure 400 {string} string "We need cellId,version and branch"
-// @Router /example/download [get]
-func (c *CompileQueueController) DownloadFile(ctx *gin.Context) {
-	var req mydomain.CellBase
-	var err error
-
-	req, err = util.GetCellBaseFromParameter(ctx, true)
-	if err != nil {
-		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
-		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
-		return
-	}
-
-	// 你可以访问header来获取文件名称、文件大小和文件类型等信息
-	filename := fmt.Sprintf("%d@@%s@@%d.osm", req.CellId, req.Branch, req.Version)
-	// 定义文件保存路径
-	baseOsmDataDir := config.GetConfig().OSMConfig.DataDir
-	cellPath := fmt.Sprintf("%s/%s/", baseOsmDataDir, req.Branch) + filename
-
-	// 先检测该cellPath是否存在，如果不存在报错
-	// 如果目录不存在，则创建改目录
-	if _, err := os.Stat(cellPath); err != nil {
-		msg := fmt.Sprintf("fail to find file %s, err:%v", filename, err)
-		if os.IsNotExist(err) {
-			ctx.JSON(http.StatusNotFound, mydomain.NewErrorRespWithMsg(-1, msg))
-			return
-		} else {
-			// 如果检查时发生其他错误，则返回错误信息
-			ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
-			return
-		}
-	}
-
-	ctx.Writer.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
-	ctx.Writer.Header().Add("Content-Type", "application/octet-stream")
-	// 发送文件内容给客户端
-	ctx.File(cellPath)
-}
-
-func (c *CompileQueueController) BBoxInfo(ctx *gin.Context) {
-	req, err := util.GetCellBaseFromParameter(ctx, false)
-	if err != nil {
-		msg := fmt.Sprintf("fail to parse parameter from url query, err:%v", err)
-		ctx.JSON(http.StatusBadRequest, mydomain.NewErrorRespWithMsg(-1, msg))
-		return
-	}
-
-	commonRes := c.cellGisMetaSvc.BBoxInfo(req.Branch, req.CellId)
 	ctx.JSON(http.StatusOK, commonRes)
 	return
 }

@@ -8,4 +8,5 @@ var Module = fx.Options(
 	fx.Provide(NewCellStatusService),
 	fx.Provide(NewCellCompileQueueService),
 	fx.Provide(NewCellCvsService),
+	fx.Provide(NewCellGisMetaService),
 )

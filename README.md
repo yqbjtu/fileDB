@@ -76,10 +76,10 @@ curl --location --request GET 'http://localhost:8090/api/v1/query/status?cellId=
 
 ```shell
   query all waiting to compile queue
-  curl --location --request GET 'http://localhost:8090/api/v1/admin/compileQueueSize'
+  curl --location --request GET 'http://localhost:8090/api/v1/compile/compileQueueSize'
 
   query waiting to compile queue by branch
-  curl --location --request GET 'http://localhost:8090/api/v1/admin/compileQueueSizeByBranch?branch=main'
+  curl --location --request GET 'http://localhost:8090/api/v1/compile/compileQueueSizeByBranch?branch=main'
 ```
 
 

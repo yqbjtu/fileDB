@@ -4,7 +4,6 @@ import (
 	"fileDB/pkg/config"
 	mydomain "fileDB/pkg/domain"
 	"fileDB/pkg/service"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -30,32 +29,10 @@ func NewAdminController(globalConfig *config.GlobalConfig,
 	return &controller
 }
 
-// FindAllWaitingToCompileQueue 查询总的等待编编译的队列长度
-// @Summary FindAllWaitingToCompileQueue 查询总的等待编编译的队列长度
-// @Description query all waiting to compile queue
-// @Tags query
-// @Accept  json
-// @Produce json
-// @Success 200 {object} mydomain.CommonResult "ok"
-// @Router /api/v1/admin/compileQueueSize [get]
-func (c *AdminController) FindAllWaitingToCompileQueue(ctx *gin.Context) {
-	count := c.cellCompileQueueSvc.WaitingToCompileQueueSize()
-	CommonResult := mydomain.CommonResult{Code: 0, Data: count, Msg: "done"}
-	ctx.JSON(http.StatusOK, CommonResult)
-	return
-}
-
-func (c *AdminController) FindAllWaitingToCompileQueueByBranch(ctx *gin.Context) {
-	branchStr := ctx.Query("branch")
-	if branchStr == "" {
-		commonRes := mydomain.CommonResult{Code: -1, Data: nil, Msg: "branch is required, but it is empty"}
-		ctx.JSON(http.StatusBadRequest, commonRes)
-		return
-	}
-
-	count := c.cellCompileQueueSvc.WaitingToCompileQueueSizeByBranch(branchStr)
-	msg := fmt.Sprintf("branch '%s' has %d cell to compile", branchStr, count)
-	CommonResult := mydomain.CommonResult{Code: 0, Data: count, Msg: msg}
+// Backup @Summary backup specific branch cell files
+func (c *AdminController) Backup(ctx *gin.Context) {
+	// only start the branch backup goroutine, return immediately
+	CommonResult := mydomain.CommonResult{Code: 0, Data: nil, Msg: "start to backup branch files"}
 	ctx.JSON(http.StatusOK, CommonResult)
 	return
 }

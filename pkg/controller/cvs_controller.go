@@ -177,7 +177,6 @@ func (c *CvsController) UnLock(ctx *gin.Context) {
 		msg := fmt.Sprintf("fail to save cell status lock info, err:%v", err)
 		ctx.JSON(http.StatusInternalServerError, mydomain.NewErrorRespWithMsg(-1, msg))
 		return
-
 	}
 
 	msg := fmt.Sprintf("cell %d is unlocked by %s now, unlock done",

@@ -27,6 +27,6 @@ func (c *MiscController) FreeMemory(context *gin.Context) {
 func (c *MiscController) BuildInfo(context *gin.Context) {
 	log.Infof("build info")
 
-	CommonResult := mydomain.CommonResult{Code: 0, Data: "v1.0", Msg: "ok"}
-	context.JSON(http.StatusOK, CommonResult)
+	commonResult := mydomain.CommonResult{Code: 0, Data: "v1.0", Msg: "ok"}
+	context.JSON(http.StatusOK, commonResult)
 }

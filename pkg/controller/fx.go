@@ -8,4 +8,5 @@ var Module = fx.Options(
 	fx.Provide(NewMiscController),
 	fx.Provide(NewQueryController),
 	fx.Provide(NewAdminController),
+	fx.Provide(NewCompileQueueController),
 )

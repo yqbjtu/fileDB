@@ -93,6 +93,22 @@ func (s *CellCvsService) AddNewVersion(req domain.AddVersionReq) (domain.CommonR
 		return commonRes, nil
 	}
 
+	// insert a event to cell_compile_queue
+	cellCompileQueue := domain.CellCompileQueue{
+		CellId:   req.CellId,
+		Branch:   req.Branch,
+		Version:  req.Version,
+		Priority: 0,
+	}
+
+	err = s.cellCompileQueueSvc.Upsert(cellCompileQueue)
+	if err != nil {
+		log.Errorf("failed to save cell compile queue, err:%v", err)
+		commonRes :=
+			domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell compile queue, err:%v", err)}
+		return commonRes, common.ErrDBOperationFailure
+	}
+
 	commonRes := domain.CommonResult{Code: 0, Data: nil, Msg: fmt.Sprintf("cell %d add new version done", req.CellId)}
 	return commonRes, nil
 }
@@ -136,22 +152,6 @@ func (s *CellCvsService) Lock(lockReq *domain.LockReq) (domain.CommonResult, err
 		log.Errorf("failed to save cell status, err:%v", err)
 		commonRes :=
 			domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell status lock info, err:%v", err)}
-		return commonRes, common.ErrDBOperationFailure
-	}
-
-	// insert a event to cell_compile_queue
-	cellCompileQueue := domain.CellCompileQueue{
-		CellId:   lockReq.CellId,
-		Branch:   lockReq.Branch,
-		Version:  cellStatus.LatestVersion,
-		Priority: 0,
-	}
-
-	err = s.cellCompileQueueSvc.Upsert(cellCompileQueue)
-	if err != nil {
-		log.Errorf("failed to save cell compile queue, err:%v", err)
-		commonRes :=
-			domain.CommonResult{Code: -1, Data: nil, Msg: fmt.Sprintf("fail to save cell compile queue, err:%v", err)}
 		return commonRes, common.ErrDBOperationFailure
 	}
 
